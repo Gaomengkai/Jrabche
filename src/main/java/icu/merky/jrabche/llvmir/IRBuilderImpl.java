@@ -29,41 +29,38 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.llvmir.inst;
+package icu.merky.jrabche.llvmir;
 
-import icu.merky.jrabche.llvmir.types.IRType;
-import icu.merky.jrabche.llvmir.types.PointerType;
-import icu.merky.jrabche.llvmir.values.IRVal;
+import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
+import icu.merky.jrabche.llvmir.structures.IRFunction;
+import icu.merky.jrabche.llvmir.values.IRValConst;
 
-import static icu.merky.jrabche.llvmir.types.PointerType.MakePointer;
+import java.util.HashMap;
+import java.util.Map;
 
-public class IRInstAlloca extends IRInst {
+public class IRBuilderImpl implements IRBuilder {
+    Map<String,IRFunction> functions=new HashMap<>();
+    IRFunction curFunc;
 
-    public IRInstAlloca(String name, IRType ty) {
-        super(name, InstID.AllocaInst, MakePointer(ty));
-    }
 
-    public IRType getAllocatedType() {
-        return ((PointerType)type).getElementType();
+    @Override
+    public void addFunction(IRFunction function) {
+        functions.put(function.getName(),function);
+        curFunc=function;
     }
 
     @Override
-    public IRInstAlloca clone() {
-        return (IRInstAlloca) super.clone();
+    public void addGlobal(String name, IRValConst value) {
+
     }
 
     @Override
-    public String toString() {
-        return getName() + " = alloca " + type.toString();
+    public IRFunction curFunc() {
+        return curFunc;
     }
 
     @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        return false;
-    }
-
-    @Override
-    public String asValue() {
-        return name;
+    public IRBasicBlock curBB() {
+        return curFunc.curBB();
     }
 }

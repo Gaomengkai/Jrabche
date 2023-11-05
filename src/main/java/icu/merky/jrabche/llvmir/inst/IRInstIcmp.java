@@ -74,8 +74,8 @@ public class IRInstIcmp extends IRInst {
                 " " +
                 opType.toString() +
                 " " +
-                lhs.getName() +
-                ", " + rhs.getName();
+                lhs.asValue() +
+                ", " + rhs.asValue();
     }
 
     @Override

@@ -31,27 +31,29 @@
 
 package icu.merky.jrabche.fe.visitor;
 
-import icu.merky.jrabche.fe.symbols.GlobalSymbol;
 import icu.merky.jrabche.llvmir.IRBuilder;
+import icu.merky.jrabche.llvmir.inst.IRInst;
+import icu.merky.jrabche.llvmir.inst.IRInstAlloca;
+import icu.merky.jrabche.llvmir.types.FunctionType;
 import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 import icu.merky.jrabche.llvmir.values.IRValConst;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class VisitorContext {
     public BType bType = BType.INVALID;
     public GlobalSwitcher isConst = new GlobalSwitcher("isConst");
+    public GlobalSwitcher needLoad = new GlobalSwitcher("needLoad");
     // symbol table global
-    public Map<String, GlobalSymbol> globalFunctionSymbolTable = new HashMap<>();
+    public Map<String, FunctionType> globalFunctionSymbolTable = new HashMap<>();
     // local symbol table
     public LayerCtrl lc = new LayerCtrl();
-    protected IRBuilder builder;
-    protected IRVal lastVal;
-    protected IRType lastType;
+    public IRBuilder builder;
+    public IRVal lastVal;
+    public IRType lastType;
+    public FPType lastFPType;
+    boolean inAtarashiiFunction = false;
     Renamer renamer = new Renamer();
 
     public void push(String name, IRVal val) {
@@ -60,6 +62,16 @@ public class VisitorContext {
 
     public IRVal query(String name) {
         return lc.query(name);
+    }
+    public FunctionType queryFunctionType(String name) {
+        return globalFunctionSymbolTable.get(name);
+    }
+    public IRInst addInst(IRInst inst) {
+        builder.curFunc().curBB().addInst(inst);
+        return inst;
+    }
+    public IRInstAlloca addAlloca(IRInstAlloca alloca) {
+        return builder.curFunc().addAlloca(alloca);
     }
 
     /**
@@ -82,7 +94,7 @@ public class VisitorContext {
     static class LayerCtrl {
         public Layer cur;
         // layer0 is global
-        List<Layer> layers = new LinkedList<>();
+        List<Layer> layers = new ArrayList<>();
 
         public LayerCtrl() {
             layers.add(new Layer());

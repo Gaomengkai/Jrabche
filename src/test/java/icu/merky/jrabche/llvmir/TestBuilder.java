@@ -38,7 +38,7 @@ import icu.merky.jrabche.llvmir.values.IRValConst;
 public class TestBuilder implements IRBuilder{
 
     @Override
-    public void addFunction(String name, IRFunction function) {
+    public void addFunction(IRFunction function) {
 
     }
 

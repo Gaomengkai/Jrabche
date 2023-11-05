@@ -1,8 +1,8 @@
 package icu.merky.jrabche.llvmir.values;
 
 import icu.merky.jrabche.exceptions.NotImplementedException;
-import icu.merky.jrabche.fe.helper.Helper;
-import icu.merky.jrabche.fe.helper.InitList;
+import icu.merky.jrabche.helper.Helper;
+import icu.merky.jrabche.helper.InitList;
 import icu.merky.jrabche.llvmir.types.ArrayType;
 import icu.merky.jrabche.llvmir.types.IRAtomType;
 import icu.merky.jrabche.llvmir.types.IRType;
@@ -49,10 +49,24 @@ public class IRValConstArray extends IRValConst {
 
     public static IRValConstArray FromInitList(InitList il, ArrayType arrayType) {
         var arr = new IRValConstArray(arrayType);
-        var gen = new ConstArrayGenerator(arr);
+        var gen = new ConstArrayGenerator(il,arr);
         gen.gen();
         arr = gen.arr;
         return arr;
+    }
+
+    public IRVal get(List<Integer> target) {
+        if(valTypes.size()==0) {
+            return null;
+        }
+        var t = valTypes.get(target.get(0));
+        if (t == ValType.ZERO) {
+            return null;
+        } else if (t == ValType.VAL) {
+            return childVals.get(target.get(0));
+        } else {
+            return childArrays.get(target.get(0)).get(target.subList(1, target.size()));
+        }
     }
 
     /**
@@ -91,11 +105,6 @@ public class IRValConstArray extends IRValConst {
             }
             N = cur.get(i) / shape.get(i);
             cur.set(i, cur.get(i) % shape.get(i));
-        }
-        if (false) {
-            for (int i = startsAt + 1; i < shape.size(); ++i) {
-                cur.set(i, 0);
-            }
         }
     }
 
@@ -156,7 +165,7 @@ public class IRValConstArray extends IRValConst {
         InitList iList;
         IRAtomType atomType;
 
-        public ConstArrayGenerator(IRValConstArray arr) {
+        public ConstArrayGenerator(InitList iList,IRValConstArray arr) {
             this.arr = arr;
             this.cur = new ArrayList<>();
             for (int i = 0; i < arr.shapes.size(); i++) {
@@ -164,6 +173,7 @@ public class IRValConstArray extends IRValConst {
             }
             this.shape = arr.shapes;
             this.atomType = arr.getArrayType().getAtomType();
+            this.iList=iList;
         }
 
         public void gen() {
@@ -177,7 +187,7 @@ public class IRValConstArray extends IRValConst {
                     var cVal = val.constVals.get(pVal++);
                     cVal = Helper.DoCompileTimeConversion(atomType, cVal);
                     arr.set(pos, cVal);
-                    ArrayPosPlusN(shape, pos, 1, d);
+                    ArrayPosPlusN(shape, pos, 1, -1);
                 } else {
                     int before = pos.get(d);
                     var il = val.initLists.get(pArr++);

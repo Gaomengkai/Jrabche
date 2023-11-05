@@ -29,41 +29,22 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.llvmir.inst;
+package icu.merky.jrabche.fe.visitor;
 
-import icu.merky.jrabche.llvmir.types.IRType;
-import icu.merky.jrabche.llvmir.types.PointerType;
-import icu.merky.jrabche.llvmir.values.IRVal;
-
-import static icu.merky.jrabche.llvmir.types.PointerType.MakePointer;
-
-public class IRInstAlloca extends IRInst {
-
-    public IRInstAlloca(String name, IRType ty) {
-        super(name, InstID.AllocaInst, MakePointer(ty));
+public class AutoDive implements AutoCloseable {
+    VisitorContext.LayerCtrl lc;
+    GlobalSwitcher gs;
+    public AutoDive(VisitorContext.LayerCtrl lc) {
+        this.lc=lc;
+        lc.dive();
     }
-
-    public IRType getAllocatedType() {
-        return ((PointerType)type).getElementType();
+    public AutoDive(GlobalSwitcher gs,boolean b) {
+        this.gs=gs;
+        gs.dive(b);
     }
-
     @Override
-    public IRInstAlloca clone() {
-        return (IRInstAlloca) super.clone();
-    }
-
-    @Override
-    public String toString() {
-        return getName() + " = alloca " + type.toString();
-    }
-
-    @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        return false;
-    }
-
-    @Override
-    public String asValue() {
-        return name;
+    public void close() throws Exception {
+        if(lc!=null)lc.ascend();
+        if(gs!=null)gs.ascend();
     }
 }

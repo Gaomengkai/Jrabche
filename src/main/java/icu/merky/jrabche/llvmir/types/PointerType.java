@@ -8,7 +8,7 @@ public class PointerType extends IRType {
         this.elementType = elementType;
     }
 
-    static public PointerType makePointer(IRType elementType) {
+    static public PointerType MakePointer(IRType elementType) {
         return new PointerType(elementType);
     }
 
@@ -16,7 +16,7 @@ public class PointerType extends IRType {
         if (type instanceof PointerType p) {
             return p.getElementType();
         }
-        return null;
+        throw new RuntimeException("Not a pointer");
     }
 
     public IRType getElementType() {

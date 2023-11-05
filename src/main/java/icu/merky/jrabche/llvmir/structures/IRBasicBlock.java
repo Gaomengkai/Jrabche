@@ -49,6 +49,8 @@ public interface IRBasicBlock {
      */
     int addInst(int position, IRInst inst);
 
+    void addInstFront(IRInst inst);
+
     /**
      * @return the name of the inst
      */

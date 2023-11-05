@@ -31,34 +31,39 @@
 
 package icu.merky.jrabche.llvmir.inst;
 
-import icu.merky.jrabche.llvmir.types.IRType;
-import icu.merky.jrabche.llvmir.types.PointerType;
+import icu.merky.jrabche.llvmir.types.FloatType;
+import icu.merky.jrabche.llvmir.types.IntType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
-import static icu.merky.jrabche.llvmir.types.PointerType.MakePointer;
-
-public class IRInstAlloca extends IRInst {
-
-    public IRInstAlloca(String name, IRType ty) {
-        super(name, InstID.AllocaInst, MakePointer(ty));
+public class IRInstUnary  extends IRInst{
+    public enum UnaryOP {
+        Invalid, FpToSi, SiToFp, ZExt, SExt
     }
-
-    public IRType getAllocatedType() {
-        return ((PointerType)type).getElementType();
+    UnaryOP unaryOP;
+    IRVal v1;
+    public IRInstUnary(UnaryOP unaryOP, IRVal v1) {
+        super(null, InstID.ConvertInst, unaryOP==UnaryOP.SiToFp?new FloatType():new IntType());
+        this.unaryOP=unaryOP;
+        this.v1=v1;
     }
-
-    @Override
-    public IRInstAlloca clone() {
-        return (IRInstAlloca) super.clone();
-    }
-
     @Override
     public String toString() {
-        return getName() + " = alloca " + type.toString();
+        // %Val = zext i1 %value to i32
+        return switch (unaryOP) {
+            case FpToSi -> name + " = fptosi " + v1.getType().toString()+ " " + v1.asValue() + " to " + type.toString();
+            case SiToFp -> name + " = sitofp " + v1.getType().toString() + " " + v1.asValue() + " to " + type.toString();
+            case ZExt -> name + " = zext " + v1.getType().toString()+ " " + v1.asValue() + " to " + type.toString();
+            case SExt -> name + " = sext " + v1.getType().toString() + " " + v1.asValue() + " to " + type.toString();
+            default -> null;
+        };
     }
 
     @Override
     public boolean replace(IRVal inst, IRVal newInst) {
+        if (v1 == inst) {
+            v1 = newInst;
+            return true;
+        }
         return false;
     }
 

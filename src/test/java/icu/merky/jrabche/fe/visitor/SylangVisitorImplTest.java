@@ -31,16 +31,23 @@
 
 package icu.merky.jrabche.fe.visitor;
 
-import icu.merky.jrabche.fe.helper.InitList;
+import icu.merky.jrabche.helper.InitList;
 import icu.merky.jrabche.fe.parser.SylangLexer;
 import icu.merky.jrabche.fe.parser.SylangParser;
+import icu.merky.jrabche.llvmir.IRBuilderImpl;
 import icu.merky.jrabche.llvmir.TestBuilder;
+import icu.merky.jrabche.llvmir.types.ArrayType;
+import icu.merky.jrabche.llvmir.types.IRAtomType;
+import icu.merky.jrabche.llvmir.values.IRValConstArray;
 import icu.merky.jrabche.llvmir.values.IRValConstFloat;
+import icu.merky.jrabche.llvmir.values.IRValConstInt;
+import icu.merky.jrabche.llvmir.values.IRVarArray;
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -104,5 +111,110 @@ class SylangVisitorImplTest {
         tree.accept(visitor);
         var n=(IRValConstFloat) C.lastVal;
         assertEquals(2.125, n.getValue());
+    }
+    @Test
+    void visitConstDef1() throws NoSuchFieldException, IllegalAccessException {
+        String program = "const int a=14;";
+        SylangVisitorImpl visitor = new SylangVisitorImpl(new TestBuilder());
+        Field c = SylangVisitorImpl.class.getDeclaredField("C");
+        c.setAccessible(true);
+        VisitorContext C = (VisitorContext) c.get(visitor);
+
+        var parser = new SylangParser(new BufferedTokenStream(new SylangLexer(CharStreams.fromString(program))));
+        var tree = parser.compUnit();
+        tree.accept(visitor);
+        assertNotNull(C.query("a"));
+        var val = C.query("a");
+        assertInstanceOf(IRValConstInt.class, val);
+        assertEquals(14, ((IRValConstInt) val).getValue());
+    }
+
+    @Test
+    void visitConstDef2() throws NoSuchFieldException, IllegalAccessException {
+        String program = "const int apple[2][3]={1,2,3,4,5,6};";
+        SylangVisitorImpl visitor = new SylangVisitorImpl(new TestBuilder());
+        Field c = SylangVisitorImpl.class.getDeclaredField("C");
+        c.setAccessible(true);
+        VisitorContext C = (VisitorContext) c.get(visitor);
+
+        var parser = new SylangParser(new BufferedTokenStream(new SylangLexer(CharStreams.fromString(program))));
+        var tree = parser.compUnit();
+        tree.accept(visitor);
+        assertNotNull(C.query("apple"));
+        var val = C.query("apple");
+        assertInstanceOf(IRValConstArray.class, val);
+        var aVal = (IRValConstArray) val;
+        assertEquals(2, aVal.getShapes().get(0));
+        assertEquals(3, aVal.getShapes().get(1));
+        assertEquals(2, aVal.getValTypes().size());
+        assertNull(aVal.getChildVals().get(0));
+        assertNull(aVal.getChildVals().get(1));
+        var elem = aVal.get(List.of(0,0));
+        assertInstanceOf(IRValConstInt.class, elem);
+        assertEquals(1, ((IRValConstInt) elem).getValue());
+        elem = aVal.get(List.of(0,1));
+        assertInstanceOf(IRValConstInt.class, elem);
+        assertEquals(2, ((IRValConstInt) elem).getValue());
+        elem = aVal.get(List.of(1,2));
+        assertInstanceOf(IRValConstInt.class, elem);
+        assertEquals(6, ((IRValConstInt) elem).getValue());
+    }
+    @Test
+    void visitVarDef1() throws NoSuchFieldException, IllegalAccessException {
+        String program = "int apple=3;";
+        SylangVisitorImpl visitor = new SylangVisitorImpl(new TestBuilder());
+        Field c = SylangVisitorImpl.class.getDeclaredField("C");
+        c.setAccessible(true);
+        VisitorContext C = (VisitorContext) c.get(visitor);
+        var parser = new SylangParser(new BufferedTokenStream(new SylangLexer(CharStreams.fromString(program))));
+        var tree = parser.compUnit();
+        tree.accept(visitor);
+
+        assertNotNull(C.query("apple"));
+        var val = C.query("apple");
+        assertInstanceOf(IRValConstInt.class, val);
+        assertEquals(3, ((IRValConstInt) val).getValue());
+    }
+
+    @Test
+    void visitVarDef2() throws NoSuchFieldException, IllegalAccessException {
+        String program = "int apple[3]={1,2};";
+        SylangVisitorImpl visitor = new SylangVisitorImpl(new TestBuilder());
+        Field c = SylangVisitorImpl.class.getDeclaredField("C");
+        c.setAccessible(true);
+        VisitorContext C = (VisitorContext) c.get(visitor);
+        var parser = new SylangParser(new BufferedTokenStream(new SylangLexer(CharStreams.fromString(program))));
+        var tree = parser.compUnit();
+        tree.accept(visitor);
+
+        assertNotNull(C.query("apple"));
+        var val = C.query("apple");
+        assertInstanceOf(IRVarArray.class, val);
+        var aVal = (IRVarArray) val;
+        assertEquals(IRAtomType.INT, ((ArrayType)aVal.getType()).getAtomType());
+        assertEquals(3, aVal.getShapes().get(0));
+        assertEquals(1, aVal.getShapes().size());
+        assertEquals(3, aVal.getValTypes().size());
+    }
+
+    @Test
+    void testFuncDef() throws NoSuchFieldException, IllegalAccessException {
+        String program = "void abc(int d,int f[]){int e=d+1;}";
+        VisitorContext C = getVisitorContext(program);
+        String funcString = C.builder.curFunc().toString();
+        System.out.println(funcString);
+
+        assertNotNull(C.queryFunctionType("abc"));
+    }
+
+    private static VisitorContext getVisitorContext(String program) throws NoSuchFieldException, IllegalAccessException {
+        SylangVisitorImpl visitor = new SylangVisitorImpl(new IRBuilderImpl());
+        Field c = SylangVisitorImpl.class.getDeclaredField("C");
+        c.setAccessible(true);
+        VisitorContext C = (VisitorContext) c.get(visitor);
+        var parser = new SylangParser(new BufferedTokenStream(new SylangLexer(CharStreams.fromString(program))));
+        var tree = parser.compUnit();
+        tree.accept(visitor);
+        return C;
     }
 }

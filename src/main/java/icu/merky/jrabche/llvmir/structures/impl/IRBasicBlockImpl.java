@@ -64,6 +64,11 @@ public class IRBasicBlockImpl implements IRBasicBlock {
     }
 
     @Override
+    public void addInstFront(IRInst inst) {
+        instList.addFirst(inst);
+    }
+
+    @Override
     public String getName() {
         return this.name;
     }
@@ -118,5 +123,15 @@ public class IRBasicBlockImpl implements IRBasicBlock {
     public boolean checkTerminator() {
         if (this.instList.size() < 1) return false;
         return instList.getLast().isTerminatorInst();
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb =new StringBuilder();
+        sb.append(name).append(":\n");
+        for (IRInst inst : instList) {
+            sb.append("\t").append(inst.toString()).append("\n");
+        }
+        return sb.toString();
     }
 }

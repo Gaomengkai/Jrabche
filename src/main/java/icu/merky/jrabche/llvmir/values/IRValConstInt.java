@@ -30,4 +30,9 @@ public class IRValConstInt extends IRValConst implements Wordzation {
     public String asValue() {
         return String.valueOf(value);
     }
+
+    @Override
+    public String toString() {
+        return String.valueOf(value);
+    }
 }

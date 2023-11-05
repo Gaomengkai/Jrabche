@@ -29,54 +29,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.fe.helper;
+package icu.merky.jrabche.llvmir.values;
 
-import icu.merky.jrabche.exceptions.NotImplementedException;
-import icu.merky.jrabche.llvmir.types.IRAtomType;
-import icu.merky.jrabche.llvmir.types.InvalidType;
-import icu.merky.jrabche.llvmir.values.IRVal;
-import icu.merky.jrabche.llvmir.values.IRValConst;
+import icu.merky.jrabche.llvmir.types.IRType;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class InitList extends IRVal {
-    public IRAtomType containedType;
-    public List<InitList> initLists;
-    public List<IRValConst> constVals;
-    public List<ILType> witch;
-    public List<Integer> indices;
-    public InitList(IRAtomType atomType) {
-        super(new InvalidType());
-        containedType = atomType;
-        witch = new ArrayList<>();
-        indices = new ArrayList<>();
+public class IRValFP extends IRVal {
+    public IRValFP(IRType type) {
+        super(type);
     }
 
     @Override
     public String asValue() {
-        throw new NotImplementedException();
+        return name;
     }
-
-    public void addIL(InitList il) {
-        if (initLists == null)
-            initLists = new ArrayList<>();
-        initLists.add(il);
-        indices.add(initLists.size() - 1);
-        witch.add(ILType.IL);
-    }
-
-    public void addCV(IRValConst cv) {
-        if (constVals == null)
-            constVals = new ArrayList<>();
-        constVals.add(cv);
-        indices.add(constVals.size() - 1);
-        witch.add(ILType.CV);
-    }
-
-    public int size() {
-        return indices.size();
-    }
-
-    public enum ILType {IL, CV}
 }

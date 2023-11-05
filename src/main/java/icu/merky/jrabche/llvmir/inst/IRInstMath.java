@@ -31,34 +31,47 @@
 
 package icu.merky.jrabche.llvmir.inst;
 
-import icu.merky.jrabche.llvmir.types.IRType;
-import icu.merky.jrabche.llvmir.types.PointerType;
+import icu.merky.jrabche.helper.Helper;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
-import static icu.merky.jrabche.llvmir.types.PointerType.MakePointer;
-
-public class IRInstAlloca extends IRInst {
-
-    public IRInstAlloca(String name, IRType ty) {
-        super(name, InstID.AllocaInst, MakePointer(ty));
+public class IRInstMath extends IRInst {
+    public enum MathOP {
+        Invalid, Add, Sub, Mul, Div, Rem, Shl, Shr, And, Or, Xor
     }
 
-    public IRType getAllocatedType() {
-        return ((PointerType)type).getElementType();
-    }
+    MathOP mathOP;
+    IRVal lhs, rhs;
 
-    @Override
-    public IRInstAlloca clone() {
-        return (IRInstAlloca) super.clone();
+    public IRInstMath(MathOP mathOP,IRVal v1, IRVal v2) {
+        super(null, InstID.MathInst, Helper.ResolveType(v1.getType(), v2.getType()));
+        this.mathOP=mathOP;
+        this.lhs=v1;
+        this.rhs=v2;
     }
 
     @Override
     public String toString() {
-        return getName() + " = alloca " + type.toString();
+        // %v18 = add i32 %v16, %v17
+        StringBuilder sb = new StringBuilder();
+        sb.append(name).append(" = ");
+        if(this.type.isFloat())
+            sb.append("f");
+        sb.append(mathOP.toString().toLowerCase()).append(" ");
+        sb.append(type.toString()).append(" ");
+        sb.append(lhs.asValue()).append(", ").append(rhs.asValue());
+        return sb.toString();
     }
 
     @Override
     public boolean replace(IRVal inst, IRVal newInst) {
+        if(lhs.equals(inst)) {
+            lhs=newInst;
+            return true;
+        }
+        if (rhs.equals(inst)) {
+            rhs=newInst;
+            return true;
+        }
         return false;
     }
 

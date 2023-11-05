@@ -31,39 +31,45 @@
 
 package icu.merky.jrabche.llvmir.inst;
 
-import icu.merky.jrabche.llvmir.types.IRType;
-import icu.merky.jrabche.llvmir.types.PointerType;
+import icu.merky.jrabche.llvmir.types.InvalidType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
 import static icu.merky.jrabche.llvmir.types.PointerType.MakePointer;
 
-public class IRInstAlloca extends IRInst {
+public class IRInstStore extends IRInst {
+    // store [123 x i32]* %arg_0, [123 x i32]** %v0
+    IRVal from, to;
 
-    public IRInstAlloca(String name, IRType ty) {
-        super(name, InstID.AllocaInst, MakePointer(ty));
-    }
-
-    public IRType getAllocatedType() {
-        return ((PointerType)type).getElementType();
-    }
-
-    @Override
-    public IRInstAlloca clone() {
-        return (IRInstAlloca) super.clone();
+    public IRInstStore(IRVal from, IRVal to) {
+        super(InstID.StoreInst, new InvalidType());
+        this.from = from;
+        this.to = to;
+        // check type.
+        if (!MakePointer(from.getType()).equals(to.getType()))
+            throw new RuntimeException("Type mismatch.");
     }
 
     @Override
     public String toString() {
-        return getName() + " = alloca " + type.toString();
+        // store [123 x i32]* %arg_0, [123 x i32]** %v0
+        return "store " + from.getType() + " " + from.asValue() + ", " + to.getType() + " " + to.asValue();
     }
 
     @Override
     public boolean replace(IRVal inst, IRVal newInst) {
+        if (from == inst) {
+            from = newInst;
+            return true;
+        }
+        if (to == inst) {
+            to = newInst;
+            return true;
+        }
         return false;
     }
 
     @Override
     public String asValue() {
-        return name;
+        return null;
     }
 }

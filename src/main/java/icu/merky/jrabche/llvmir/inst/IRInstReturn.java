@@ -37,8 +37,8 @@ import icu.merky.jrabche.llvmir.values.IRVal;
 public class IRInstReturn extends IRInst {
     IRVal opVal;
 
-    public IRInstReturn(String name, IRAtomType ty, IRVal opVal) {
-        super(name, InstID.ReturnInst, ty.toIRType());
+    public IRInstReturn(IRAtomType ty, IRVal opVal) {
+        super(null, InstID.ReturnInst, ty.toIRType());
         this.opVal = opVal;
     }
 
@@ -54,7 +54,7 @@ public class IRInstReturn extends IRInst {
         if (opVal == null) {
             return "ret void";
         } else {
-            return "ret " + opVal.getType().toString() + " " + opVal.getName();
+            return "ret " + opVal.getType().toString() + " " + opVal.asValue();
         }
     }
 

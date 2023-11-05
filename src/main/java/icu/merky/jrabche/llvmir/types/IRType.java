@@ -28,6 +28,18 @@ abstract public class IRType implements Cloneable {
     public boolean isInt() {
         return type == IRAtomType.INT;
     }
+    public boolean isI32() {
+        if(type == IRAtomType.INT) {
+            return ((IntType)this).getBitWidth() == 32;
+        }
+        return false;
+    }
+    public boolean isI1() {
+        if(type == IRAtomType.INT) {
+            return ((IntType)this).getBitWidth() == 1;
+        }
+        return false;
+    }
 
     public boolean isFloat() {
         return type == IRAtomType.FLOAT;

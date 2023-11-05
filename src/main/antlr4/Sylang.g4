@@ -98,7 +98,7 @@ varDecl: bType varDef (Comma varDef)* Semicolon;
 varDef: Ident (Lbracket exp Rbracket)* (Assign initVal)?;
 
 initVal:
-	exp											# init
+	exp											# initExp
 	| Lbrace (initVal (Comma initVal)*)? Rbrace	# initList;
 
 funcDef: funcType Ident Lparen funcFParams? Rparen block;

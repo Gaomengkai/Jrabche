@@ -5,7 +5,7 @@ import icu.merky.jrabche.llvmir.structures.IRFunction;
 import icu.merky.jrabche.llvmir.values.IRValConst;
 
 public interface IRBuilder {
-    void addFunction(String name, IRFunction function);
+    void addFunction(IRFunction function);
 
     void addGlobal(String name, IRValConst value);
 

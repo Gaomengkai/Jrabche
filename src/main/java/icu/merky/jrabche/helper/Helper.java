@@ -29,9 +29,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.fe.helper;
+package icu.merky.jrabche.helper;
 
+import icu.merky.jrabche.fe.visitor.VisitorContext;
+import icu.merky.jrabche.llvmir.inst.IRInstMath;
+import icu.merky.jrabche.llvmir.inst.IRInstUnary;
 import icu.merky.jrabche.llvmir.types.IRAtomType;
+import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.values.*;
 
 public class Helper {
@@ -47,7 +51,7 @@ public class Helper {
         }
     }
 
-    public static float getFloatNumFromCVal(IRValConst lastVal) {
+    public static float GetFloatNumFromCVal(IRValConst lastVal) {
         if (lastVal instanceof IRValConstInt intVal) {
             return intVal.getValue();
         } else if (lastVal instanceof IRValConstFloat floatVal) {
@@ -56,6 +60,42 @@ public class Helper {
             return boolVal.getValue();
         } else {
             throw new RuntimeException("Not a number");
+        }
+    }
+
+    public static IRValConst DoCompileTimeCalculation(IRValConst lhs, IRValConst rhs, IRInstMath.MathOP op) {
+        var resolvedType = ResolveType(lhs.getType(), rhs.getType());
+        var resolvedAtomType = resolvedType.toAtomType();
+        lhs = DoCompileTimeConversion(resolvedAtomType, lhs);
+        rhs = DoCompileTimeConversion(resolvedAtomType, rhs);
+        if (resolvedAtomType.equals(IRAtomType.INT)) {
+            var l = ((IRValConstInt) lhs).getValue();
+            var r = ((IRValConstInt) rhs).getValue();
+            return switch (op) {
+                case Add -> new IRValConstInt(l + r);
+                case Sub -> new IRValConstInt(l - r);
+                case Mul -> new IRValConstInt(l * r);
+                case Div -> new IRValConstInt(l / r);
+                case Rem -> new IRValConstInt(l % r);
+                case Shl -> new IRValConstInt(l << r);
+                case Shr -> new IRValConstInt(l >> r);
+                case And -> new IRValConstInt(l & r);
+                case Or -> new IRValConstInt(l | r);
+                case Xor -> new IRValConstInt(l ^ r);
+                default -> throw new RuntimeException("MathOP error");
+            };
+        } else if (resolvedAtomType.equals(IRAtomType.FLOAT)) {
+            var l = GetFloatNumFromCVal(lhs);
+            var r = GetFloatNumFromCVal(rhs);
+            return switch (op) {
+                case Add -> new IRValConstFloat(l + r);
+                case Sub -> new IRValConstFloat(l - r);
+                case Mul -> new IRValConstFloat(l * r);
+                case Div -> new IRValConstFloat(l / r);
+                default -> throw new RuntimeException("MathOP error");
+            };
+        } else {
+            throw new RuntimeException("MathOP error");
         }
     }
 
@@ -89,5 +129,41 @@ public class Helper {
         } else {
             throw new RuntimeException("Not a const");
         }
+    }
+
+    public static void DoRuntimeConversion(VisitorContext C, IRAtomType atomType, IRVal val) {
+        if (val instanceof IRValConst) {
+            C.lastVal = DoCompileTimeConversion(atomType, val);
+        } else {
+            switch (atomType) {
+                case INT -> {
+                    if (val.getType().isI32()) {
+                        C.lastVal = val;
+                    } else if (val.getType().isFloat()) {
+                        C.lastVal = C.addInst(new IRInstUnary(IRInstUnary.UnaryOP.FpToSi, val));
+                    } else if (val.getType().isI1()) {
+                        C.lastVal = C.addInst(new IRInstUnary(IRInstUnary.UnaryOP.ZExt, val));
+                    } else {
+                        throw new RuntimeException("Not a number");
+                    }
+                }
+                case FLOAT -> {
+                    if (val.getType().isI32()) {
+                        C.lastVal = C.addInst(new IRInstUnary(IRInstUnary.UnaryOP.SiToFp, val));
+                    } else if (val.getType().isFloat()) {
+                        C.lastVal = val;
+                    } else if (val.getType().isI1()) {
+                        C.lastVal = C.addInst(new IRInstUnary(IRInstUnary.UnaryOP.ZExt, val));
+                        C.lastVal = C.addInst(new IRInstUnary(IRInstUnary.UnaryOP.SiToFp, C.lastVal));
+                    } else {
+                        throw new RuntimeException("Not a number");
+                    }
+                }
+            }
+        }
+    }
+
+    public static IRType ResolveType(IRType t1, IRType t2) {
+        return (t1.isFloat() || t2.isFloat()) ? (t1.isFloat() ? t1 : t2) : t1;
     }
 }

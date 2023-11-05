@@ -31,34 +31,59 @@
 
 package icu.merky.jrabche.llvmir.inst;
 
+import icu.merky.jrabche.llvmir.types.FunctionType;
 import icu.merky.jrabche.llvmir.types.IRType;
-import icu.merky.jrabche.llvmir.types.PointerType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
-import static icu.merky.jrabche.llvmir.types.PointerType.MakePointer;
+import java.util.List;
 
-public class IRInstAlloca extends IRInst {
+public class IRInstCall extends IRInst{
+    List<IRVal> args;
+    String funcName;
 
-    public IRInstAlloca(String name, IRType ty) {
-        super(name, InstID.AllocaInst, MakePointer(ty));
-    }
-
-    public IRType getAllocatedType() {
-        return ((PointerType)type).getElementType();
-    }
-
-    @Override
-    public IRInstAlloca clone() {
-        return (IRInstAlloca) super.clone();
+    /**
+     * You MUST do implicit type conversion before calling this constructor.
+     * @param functionType Function type.
+     * @param args       Arguments.
+     */
+    public IRInstCall(String funcName,FunctionType functionType, List<IRVal> args) {
+        super(InstID.CallInst, functionType.getRetType());
+        this.args = args;
+        this.funcName=funcName;
+        // check args type
+        if (args.size() != functionType.getParamsType().size())
+            throw new RuntimeException("Argument number mismatch.");
+        for (int i = 0; i < args.size(); i++) {
+            if (!args.get(i).getType().equals(functionType.getParamsType().get(i)))
+                throw new RuntimeException("Argument type mismatch.");
+        }
     }
 
     @Override
     public String toString() {
-        return getName() + " = alloca " + type.toString();
+        StringBuilder sb=new StringBuilder();
+        if(name!=null){
+            sb.append(name).append(" = ");
+        }
+        sb.append("call ").append(type.toString()).append(" @").append(funcName).append("(");
+        for(int i=0;i<args.size();i++){
+            sb.append(args.get(i).getType().toString()).append(" ").append(args.get(i).asValue());
+            if(i!=args.size()-1){
+                sb.append(", ");
+            }
+        }
+        sb.append(")");
+        return sb.toString();
     }
 
     @Override
     public boolean replace(IRVal inst, IRVal newInst) {
+        for(int i=0;i<args.size();i++){
+            if(args.get(i).equals(inst)){
+                args.set(i,newInst);
+                return true;
+            }
+        }
         return false;
     }
 

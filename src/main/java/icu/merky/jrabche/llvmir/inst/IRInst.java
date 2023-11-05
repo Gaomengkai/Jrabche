@@ -38,9 +38,15 @@ import icu.merky.jrabche.llvmir.values.ValueRepresentable;
 public abstract class IRInst extends IRVal implements Cloneable, Replaceable, ValueRepresentable {
     protected InstID instID;
     private boolean deleted = false;
+
     public IRInst(String name, InstID instID, IRType valType) {
         super(valType);
         this.name = name;
+        this.type = valType;
+        this.instID = instID;
+    }
+    public IRInst(InstID instID, IRType valType) {
+        super(valType);
         this.type = valType;
         this.instID = instID;
     }
@@ -84,12 +90,8 @@ public abstract class IRInst extends IRVal implements Cloneable, Replaceable, Va
         return isReturnInst() || isBrInst();
     }
 
-    public boolean isIMathInst() {
-        return instID == InstID.IMathInst;
-    }
-
-    public boolean isFMathInst() {
-        return instID == InstID.FMathInst;
+    public boolean isMathInst() {
+        return instID == InstID.MathInst;
     }
 
     public boolean isICmpInst() {
@@ -127,6 +129,16 @@ public abstract class IRInst extends IRVal implements Cloneable, Replaceable, Va
     public boolean isPhiInst() {
         return instID == InstID.PhiInst;
     }
+    public boolean needName() {
+        if( isTerminatorInst() ||isStoreInst())
+            return false;
+        if(isCallInst()) {
+            if(this instanceof IRInstCall call)
+                return call.getType().isVoid();
+            throw new RuntimeException("CallInst need IRInstCall");
+        }
+        return true;
+    }
 
     public InstID getInstID() {
         return instID;
@@ -141,8 +153,7 @@ public abstract class IRInst extends IRVal implements Cloneable, Replaceable, Va
         AllocaInst,
         ReturnInst,
         BrInst,
-        IMathInst,
-        FMathInst,
+        MathInst,
         ICmpInst,
         FCmpInst,
         LoadInst,

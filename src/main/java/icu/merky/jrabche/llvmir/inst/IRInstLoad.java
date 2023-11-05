@@ -53,7 +53,7 @@ public class IRInstLoad extends IRInst {
 
     @Override
     public String toString() {
-        return name + " = load " + type.toString() + ", " + ptr.getType().toString() + " " + ptr.getName();
+        return name + " = load " + type.toString() + ", " + ptr.getType().toString() + " " + ptr.asValue();
     }
 
     @Override
