@@ -45,4 +45,9 @@ public class IRValConstFloat extends IRValConst implements Wordzation {
     public String asValue() {
         return String.valueOf(Double.doubleToLongBits(value));
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof IRValConstFloat && ((IRValConstFloat) obj).value == value;
+    }
 }

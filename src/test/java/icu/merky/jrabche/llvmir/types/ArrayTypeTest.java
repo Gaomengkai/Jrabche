@@ -9,11 +9,11 @@ class ArrayTypeTest {
     @Test
     void getAtomType() {
         var t = new ArrayType(50,new ArrayType(20,new IntType()));
-        assertEquals(IRAtomType.INT,t.getAtomType());
+        assertEquals(IRBasicType.INT,t.getAtomType());
         var t2 = new ArrayType(30,new FloatType());
-        assertEquals(IRAtomType.FLOAT,t2.getAtomType());
+        assertEquals(IRBasicType.FLOAT,t2.getAtomType());
         var t3=new ArrayType(30,new ArrayType(40,new ArrayType(50,new ArrayType(60,new IntType()))));
-        assertEquals(IRAtomType.INT,t3.getAtomType());
+        assertEquals(IRBasicType.INT,t3.getAtomType());
     }
 
     @Test

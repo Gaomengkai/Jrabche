@@ -39,6 +39,11 @@ public class IRValFP extends IRVal {
     }
 
     @Override
+    public void setName(String name) {
+        super.setName(name.startsWith("%") ? name : ("%" + name));
+    }
+
+    @Override
     public String asValue() {
         return name;
     }

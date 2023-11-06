@@ -4,7 +4,7 @@ public class PointerType extends IRType {
     private IRType elementType;
 
     public PointerType(IRType elementType) {
-        super(IRAtomType.POINTER);
+        super(IRBasicType.POINTER);
         this.elementType = elementType;
     }
 

@@ -2,7 +2,7 @@ package icu.merky.jrabche.llvmir.types;
 
 public class ZeroInitializerType extends IRType {
     public ZeroInitializerType() {
-        super(IRAtomType.ZEROINITIALIZER);
+        super(IRBasicType.ZEROINITIALIZER);
     }
 
     @Override

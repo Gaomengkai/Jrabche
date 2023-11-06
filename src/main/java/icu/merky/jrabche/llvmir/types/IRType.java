@@ -3,9 +3,9 @@ package icu.merky.jrabche.llvmir.types;
 import java.util.Objects;
 
 abstract public class IRType implements Cloneable {
-    public IRAtomType type;
+    public IRBasicType type;
 
-    public IRType(IRAtomType type_) {
+    public IRType(IRBasicType type_) {
         type = type_;
     }
 
@@ -26,52 +26,53 @@ abstract public class IRType implements Cloneable {
     public abstract String toString();
 
     public boolean isInt() {
-        return type == IRAtomType.INT;
+        return type == IRBasicType.INT;
     }
     public boolean isI32() {
-        if(type == IRAtomType.INT) {
+        if(type == IRBasicType.INT) {
             return ((IntType)this).getBitWidth() == 32;
         }
         return false;
     }
     public boolean isI1() {
-        if(type == IRAtomType.INT) {
+        if(type == IRBasicType.INT) {
             return ((IntType)this).getBitWidth() == 1;
         }
         return false;
     }
 
     public boolean isFloat() {
-        return type == IRAtomType.FLOAT;
+        return type == IRBasicType.FLOAT;
     }
 
     public boolean isVoid() {
-        return type == IRAtomType.VOID;
+        return type == IRBasicType.VOID;
     }
 
     public boolean isArray() {
-        return type == IRAtomType.ARRAY;
+        return type == IRBasicType.ARRAY;
     }
 
     public boolean isPointer() {
-        return type == IRAtomType.POINTER;
+        return type == IRBasicType.POINTER;
     }
 
     public boolean isFunction() {
-        return type == IRAtomType.FUNCTION;
+        return type == IRBasicType.FUNCTION;
     }
 
     public boolean isLabel() {
-        return type == IRAtomType.LABEL;
+        return type == IRBasicType.LABEL;
     }
 
     public boolean isZeroInitializer() {
-        return type == IRAtomType.ZEROINITIALIZER;
+        return type == IRBasicType.ZEROINITIALIZER;
     }
 
-    public IRAtomType toAtomType() {
+    public IRBasicType toBasicType() {
         return type;
     }
+    public IRBasicType getBasicType() {return type;}
 
     @Override
     public abstract IRType clone();

@@ -2,7 +2,7 @@ package icu.merky.jrabche.llvmir.types;
 
 public class LabelType extends IRType {
     public LabelType() {
-        super(IRAtomType.LABEL);
+        super(IRBasicType.LABEL);
     }
 
     @Override

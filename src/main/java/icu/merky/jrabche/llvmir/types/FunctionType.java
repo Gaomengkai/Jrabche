@@ -8,12 +8,12 @@ public class FunctionType extends IRType {
     private IRType retType;
     private final List<IRType> paramsType;
     public FunctionType() {
-        super(IRAtomType.FUNCTION);
+        super(IRBasicType.FUNCTION);
         paramsType = new ArrayList<>();
     }
 
     public FunctionType(IRType retType, List<IRType> paramsType) {
-        super(IRAtomType.FUNCTION);
+        super(IRBasicType.FUNCTION);
         this.retType = retType;
         this.paramsType = paramsType;
     }

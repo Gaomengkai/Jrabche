@@ -32,9 +32,11 @@
 package icu.merky.jrabche.helper;
 
 import icu.merky.jrabche.fe.visitor.VisitorContext;
+import icu.merky.jrabche.llvmir.inst.IRInstCmpFactory;
+import icu.merky.jrabche.llvmir.inst.IRInstIcmp;
 import icu.merky.jrabche.llvmir.inst.IRInstMath;
 import icu.merky.jrabche.llvmir.inst.IRInstUnary;
-import icu.merky.jrabche.llvmir.types.IRAtomType;
+import icu.merky.jrabche.llvmir.types.IRBasicType;
 import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.values.*;
 
@@ -44,7 +46,7 @@ public class Helper {
             return intVal.getValue();
         } else if (lastVal instanceof IRValConstFloat floatVal) {
             return (int) floatVal.getValue();
-        } else if (lastVal instanceof IRValConstI1 boolVal) {
+        } else if (lastVal instanceof IRValConstBool boolVal) {
             return boolVal.getValue();
         } else {
             throw new RuntimeException("Not a number");
@@ -56,19 +58,62 @@ public class Helper {
             return intVal.getValue();
         } else if (lastVal instanceof IRValConstFloat floatVal) {
             return floatVal.getValue();
-        } else if (lastVal instanceof IRValConstI1 boolVal) {
+        } else if (lastVal instanceof IRValConstBool boolVal) {
             return boolVal.getValue();
         } else {
             throw new RuntimeException("Not a number");
         }
     }
 
+    private static int compare2ValConst(IRValConst lhs, IRValConst rhs) {
+        Integer lInt = null, rInt = null;
+        Float lFloat = null, rFloat = null;
+        if (lhs instanceof IRValConstBool lhsI1) {
+            lInt = lhsI1.getValue();
+        } else if (lhs instanceof IRValConstInt lhsInt) {
+            lInt = lhsInt.getValue();
+        } else if (lhs instanceof IRValConstFloat lhsFloat) {
+            lFloat = lhsFloat.getValue();
+        }
+        if (rhs instanceof IRValConstBool rhsI1) {
+            rInt = rhsI1.getValue();
+        } else if (rhs instanceof IRValConstInt rhsInt) {
+            rInt = rhsInt.getValue();
+        } else if (rhs instanceof IRValConstFloat rhsFloat) {
+            rFloat = rhsFloat.getValue();
+        }
+        // same type
+        if (lInt != null && rInt != null) {
+            return lInt.compareTo(rInt);
+        } else if (lFloat != null && rFloat != null) {
+            return lFloat.compareTo(rFloat);
+        }
+        // different type
+        if (lInt != null && rFloat != null) {
+            return lInt.compareTo(rFloat.intValue());
+        } else if (lFloat != null && rInt != null) {
+            return lFloat.compareTo(rInt.floatValue());
+        }
+        throw new RuntimeException("Not a number");
+    }
+
+    public static IRValConstBool DoCompileTimeComparison(IRValConst lhs, IRValConst rhs, IRInstIcmp.IcmpOp op) {
+        return switch (op) {
+            case EQ -> new IRValConstBool(compare2ValConst(lhs, rhs) == 0 ? 1 : 0);
+            case NE -> new IRValConstBool(compare2ValConst(lhs, rhs) != 0 ? 1 : 0);
+            case SGT -> new IRValConstBool(compare2ValConst(lhs, rhs) > 0 ? 1 : 0);
+            case SGE -> new IRValConstBool(compare2ValConst(lhs, rhs) >= 0 ? 1 : 0);
+            case SLT -> new IRValConstBool(compare2ValConst(lhs, rhs) < 0 ? 1 : 0);
+            case SLE -> new IRValConstBool(compare2ValConst(lhs, rhs) <= 0 ? 1 : 0);
+            default -> throw new RuntimeException("IcmpOP error");
+        };
+    }
+
     public static IRValConst DoCompileTimeCalculation(IRValConst lhs, IRValConst rhs, IRInstMath.MathOP op) {
         var resolvedType = ResolveType(lhs.getType(), rhs.getType());
-        var resolvedAtomType = resolvedType.toAtomType();
-        lhs = DoCompileTimeConversion(resolvedAtomType, lhs);
-        rhs = DoCompileTimeConversion(resolvedAtomType, rhs);
-        if (resolvedAtomType.equals(IRAtomType.INT)) {
+        lhs = DoCompileTimeConversion(resolvedType, lhs);
+        rhs = DoCompileTimeConversion(resolvedType, rhs);
+        if (resolvedType.equals(IRBasicType.INT)) {
             var l = ((IRValConstInt) lhs).getValue();
             var r = ((IRValConstInt) rhs).getValue();
             return switch (op) {
@@ -84,7 +129,7 @@ public class Helper {
                 case Xor -> new IRValConstInt(l ^ r);
                 default -> throw new RuntimeException("MathOP error");
             };
-        } else if (resolvedAtomType.equals(IRAtomType.FLOAT)) {
+        } else if (resolvedType.equals(IRBasicType.FLOAT)) {
             var l = GetFloatNumFromCVal(lhs);
             var r = GetFloatNumFromCVal(rhs);
             return switch (op) {
@@ -99,7 +144,7 @@ public class Helper {
         }
     }
 
-    public static IRValConst DoCompileTimeConversion(IRAtomType atomType, IRVal val) {
+    public static IRValConst DoCompileTimeConversion(IRBasicType atomType, IRVal val) {
         if (val instanceof IRValConst) {
             switch (atomType) {
                 case INT -> {
@@ -107,8 +152,8 @@ public class Helper {
                         return (IRValConstInt) val;
                     } else if (val instanceof IRValConstFloat) {
                         return new IRValConstInt((int) ((IRValConstFloat) val).getValue());
-                    } else if (val instanceof IRValConstI1) {
-                        return new IRValConstInt(((IRValConstI1) val).getValue());
+                    } else if (val instanceof IRValConstBool) {
+                        return new IRValConstInt(((IRValConstBool) val).getValue());
                     } else {
                         throw new RuntimeException("Not a number");
                     }
@@ -118,8 +163,8 @@ public class Helper {
                         return new IRValConstFloat(((IRValConstInt) val).getValue());
                     } else if (val instanceof IRValConstFloat) {
                         return (IRValConstFloat) val;
-                    } else if (val instanceof IRValConstI1) {
-                        return new IRValConstFloat(((IRValConstI1) val).getValue());
+                    } else if (val instanceof IRValConstBool) {
+                        return new IRValConstFloat(((IRValConstBool) val).getValue());
                     } else {
                         throw new RuntimeException("Not a number");
                     }
@@ -131,7 +176,7 @@ public class Helper {
         }
     }
 
-    public static void DoRuntimeConversion(VisitorContext C, IRAtomType atomType, IRVal val) {
+    public static void DoRuntimeConversion(VisitorContext C, IRBasicType atomType, IRVal val) {
         if (val instanceof IRValConst) {
             C.lastVal = DoCompileTimeConversion(atomType, val);
         } else {
@@ -159,11 +204,44 @@ public class Helper {
                         throw new RuntimeException("Not a number");
                     }
                 }
+                default -> throw new IllegalStateException("Unexpected value: " + atomType);
             }
         }
     }
 
-    public static IRType ResolveType(IRType t1, IRType t2) {
-        return (t1.isFloat() || t2.isFloat()) ? (t1.isFloat() ? t1 : t2) : t1;
+    public static void DoRuntimeCalculation(VisitorContext C, IRVal lhs, IRVal rhs, IRInstMath.MathOP op) {
+        if (lhs instanceof IRValConst lhsc && rhs instanceof IRValConst rhsc) {
+            C.lastVal = DoCompileTimeCalculation(lhsc, rhsc, op);
+            return;
+        }
+        var resolvedType = ResolveType(lhs.getType(), rhs.getType());
+        DoRuntimeConversion(C, resolvedType, lhs);
+        DoRuntimeConversion(C, resolvedType, rhs);
+        if (resolvedType.equals(IRBasicType.INT)) {
+            C.lastVal = C.addInst(new IRInstMath(op, C.lastVal, rhs));
+        } else if (resolvedType.equals(IRBasicType.FLOAT)) {
+            C.lastVal = C.addInst(new IRInstMath(op, C.lastVal, rhs));
+        } else {
+            throw new RuntimeException("MathOP error");
+        }
+    }
+
+    public static void DoRuntimeComparison(VisitorContext C, IRVal lhs, IRVal rhs, IRInstIcmp.IcmpOp op) {
+        if (lhs instanceof IRValConst lhsc && rhs instanceof IRValConst rhsc) {
+            C.lastVal = DoCompileTimeComparison(lhsc, rhsc, op);
+            return;
+        }
+        var resolvedType = ResolveType(lhs.getType(), rhs.getType());
+        DoRuntimeConversion(C, resolvedType, lhs);
+        lhs = C.lastVal;
+        DoRuntimeConversion(C, resolvedType, rhs);
+        rhs = C.lastVal;
+        C.addAndUpdate(IRInstCmpFactory.createCmpInst(op,lhs,rhs,resolvedType));
+    }
+    public static IRBasicType ResolveType(IRType t1, IRType t2) {
+        if(t1.isFloat()||t2.isFloat()){
+            return IRBasicType.FLOAT;
+        }
+        return IRBasicType.INT;
     }
 }

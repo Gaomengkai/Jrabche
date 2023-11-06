@@ -2,7 +2,7 @@ package icu.merky.jrabche.llvmir.types;
 
 public class FloatType extends IRType {
     public FloatType() {
-        super(IRAtomType.FLOAT);
+        super(IRBasicType.FLOAT);
     }
 
     @Override

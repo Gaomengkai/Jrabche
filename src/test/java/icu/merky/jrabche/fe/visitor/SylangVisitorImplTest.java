@@ -37,7 +37,7 @@ import icu.merky.jrabche.fe.parser.SylangParser;
 import icu.merky.jrabche.llvmir.IRBuilderImpl;
 import icu.merky.jrabche.llvmir.TestBuilder;
 import icu.merky.jrabche.llvmir.types.ArrayType;
-import icu.merky.jrabche.llvmir.types.IRAtomType;
+import icu.merky.jrabche.llvmir.types.IRBasicType;
 import icu.merky.jrabche.llvmir.values.IRValConstArray;
 import icu.merky.jrabche.llvmir.values.IRValConstFloat;
 import icu.merky.jrabche.llvmir.values.IRValConstInt;
@@ -191,7 +191,7 @@ class SylangVisitorImplTest {
         var val = C.query("apple");
         assertInstanceOf(IRVarArray.class, val);
         var aVal = (IRVarArray) val;
-        assertEquals(IRAtomType.INT, ((ArrayType)aVal.getType()).getAtomType());
+        assertEquals(IRBasicType.INT, ((ArrayType)aVal.getType()).getAtomType());
         assertEquals(3, aVal.getShapes().get(0));
         assertEquals(1, aVal.getShapes().size());
         assertEquals(3, aVal.getValTypes().size());
@@ -199,7 +199,38 @@ class SylangVisitorImplTest {
 
     @Test
     void testFuncDef() throws NoSuchFieldException, IllegalAccessException {
-        String program = "void abc(int d,int f[]){int e=d+1;}";
+        String program = "void abc(int d,int f[]){int e=d+1; int g=2;}";
+        VisitorContext C = getVisitorContext(program);
+        String funcString = C.builder.curFunc().toString();
+        System.out.println(funcString);
+
+        assertNotNull(C.queryFunctionType("abc"));
+    }
+
+    @Test
+    void testIf() throws NoSuchFieldException, IllegalAccessException {
+        String program = "void abc(int d){int e=d+1; if(e==1){e=e+1;}}";
+        VisitorContext C = getVisitorContext(program);
+        String funcString = C.builder.curFunc().toString();
+        System.out.println(funcString);
+
+        assertNotNull(C.queryFunctionType("abc"));
+    }
+
+    @Test
+    void testIf2() throws NoSuchFieldException, IllegalAccessException {
+        String program = """
+                int main() {
+                    int a=3;
+                    int b=4;
+                    if(a==b) {
+                        a=5;
+                    } else {
+                        b=6;
+                    }
+                    return 7;
+                    }
+                """;
         VisitorContext C = getVisitorContext(program);
         String funcString = C.builder.curFunc().toString();
         System.out.println(funcString);

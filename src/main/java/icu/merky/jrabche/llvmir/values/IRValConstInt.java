@@ -35,4 +35,9 @@ public class IRValConstInt extends IRValConst implements Wordzation {
     public String toString() {
         return String.valueOf(value);
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof IRValConstInt && ((IRValConstInt) obj).value == value;
+    }
 }

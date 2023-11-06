@@ -2,7 +2,7 @@ package icu.merky.jrabche.llvmir.types;
 
 public class VoidType extends IRType {
     public VoidType() {
-        super(IRAtomType.VOID);
+        super(IRBasicType.VOID);
     }
 
     @Override

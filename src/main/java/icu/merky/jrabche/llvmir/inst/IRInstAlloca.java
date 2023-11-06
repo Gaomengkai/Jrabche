@@ -40,7 +40,8 @@ import static icu.merky.jrabche.llvmir.types.PointerType.MakePointer;
 public class IRInstAlloca extends IRInst {
 
     public IRInstAlloca(String name, IRType ty) {
-        super(name, InstID.AllocaInst, MakePointer(ty));
+        super(InstID.AllocaInst, MakePointer(ty));
+        setName(name);
     }
 
     public IRType getAllocatedType() {

@@ -31,52 +31,33 @@
 
 package icu.merky.jrabche.llvmir.inst;
 
-import icu.merky.jrabche.helper.Helper;
+import icu.merky.jrabche.llvmir.types.IRBasicType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
-public class IRInstMath extends IRInst {
-    public enum MathOP {
-        Invalid, Add, Sub, Mul, Div, Rem, Shl, Shr, And, Or, Xor
+import java.util.HashMap;
+import java.util.Map;
+
+public class IRInstCmpFactory{
+    static private final Map<IRInstIcmp.IcmpOp, IRInstFcmp.FcmpOp> opMap = new HashMap<>();
+    static {
+        opMap.put(IRInstIcmp.IcmpOp.EQ, IRInstFcmp.FcmpOp.UEQ);
+        opMap.put(IRInstIcmp.IcmpOp.NE, IRInstFcmp.FcmpOp.UNE);
+        opMap.put(IRInstIcmp.IcmpOp.SGT, IRInstFcmp.FcmpOp.UGT);
+        opMap.put(IRInstIcmp.IcmpOp.SGE, IRInstFcmp.FcmpOp.UGE);
+        opMap.put(IRInstIcmp.IcmpOp.SLT, IRInstFcmp.FcmpOp.ULT);
+        opMap.put(IRInstIcmp.IcmpOp.SLE, IRInstFcmp.FcmpOp.ULE);
+        opMap.put(IRInstIcmp.IcmpOp.UGT, null);
+        opMap.put(IRInstIcmp.IcmpOp.UGE, null);
+        opMap.put(IRInstIcmp.IcmpOp.ULT, null);
+        opMap.put(IRInstIcmp.IcmpOp.ULE, null);
     }
-
-    MathOP mathOP;
-    IRVal lhs, rhs;
-
-    public IRInstMath(MathOP mathOP,IRVal v1, IRVal v2) {
-        super(null, InstID.MathInst, Helper.ResolveType(v1.getType(), v2.getType()).toIRType());
-        this.mathOP=mathOP;
-        this.lhs=v1;
-        this.rhs=v2;
-    }
-
-    @Override
-    public String toString() {
-        // %v18 = add i32 %v16, %v17
-        StringBuilder sb = new StringBuilder();
-        sb.append(name).append(" = ");
-        if(this.type.isFloat())
-            sb.append("f");
-        sb.append(mathOP.toString().toLowerCase()).append(" ");
-        sb.append(type.toString()).append(" ");
-        sb.append(lhs.asValue()).append(", ").append(rhs.asValue());
-        return sb.toString();
-    }
-
-    @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if(lhs.equals(inst)) {
-            lhs=newInst;
-            return true;
+    public static IRInst createCmpInst(IRInstIcmp.IcmpOp op, IRVal lhs, IRVal rhs, IRBasicType type){
+        if(type== IRBasicType.INT){
+            return new IRInstIcmp(op, lhs, rhs);
+        } else if(type== IRBasicType.FLOAT){
+            return new IRInstFcmp(opMap.get(op), lhs, rhs);
+        } else {
+            throw new RuntimeException("Unknown type");
         }
-        if (rhs.equals(inst)) {
-            rhs=newInst;
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public String asValue() {
-        return name;
     }
 }

@@ -5,15 +5,15 @@ import java.util.List;
 public class ArrayType extends IRType {
     private IRType elementType;
     private int size;
-    private IRAtomType atomType = IRAtomType.INVALID;
+    private IRBasicType atomType = IRBasicType.INVALID;
 
     public ArrayType(int size, IRType elementType) {
-        super(IRAtomType.ARRAY);
+        super(IRBasicType.ARRAY);
         this.size = size;
         this.elementType = elementType;
     }
 
-    public static ArrayType FromShape(IRAtomType atomType, List<Integer> shape) {
+    public static ArrayType FromShape(IRBasicType atomType, List<Integer> shape) {
         if (shape.size() == 0) {
             throw new RuntimeException("Shape must be non-empty");
         }
@@ -39,12 +39,12 @@ public class ArrayType extends IRType {
         this.size = size;
     }
 
-    public IRAtomType getAtomType() {
-        if (atomType == IRAtomType.INVALID) {
+    public IRBasicType getAtomType() {
+        if (atomType == IRBasicType.INVALID) {
             if (elementType.isInt()) {
-                atomType = IRAtomType.INT;
+                atomType = IRBasicType.INT;
             } else if (elementType.isFloat()) {
-                atomType = IRAtomType.FLOAT;
+                atomType = IRBasicType.FLOAT;
             } else if (elementType.isArray()) {
                 atomType = ((ArrayType) elementType).getAtomType();
             } else {

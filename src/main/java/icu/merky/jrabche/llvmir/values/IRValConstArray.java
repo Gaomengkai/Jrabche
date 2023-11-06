@@ -4,7 +4,7 @@ import icu.merky.jrabche.exceptions.NotImplementedException;
 import icu.merky.jrabche.helper.Helper;
 import icu.merky.jrabche.helper.InitList;
 import icu.merky.jrabche.llvmir.types.ArrayType;
-import icu.merky.jrabche.llvmir.types.IRAtomType;
+import icu.merky.jrabche.llvmir.types.IRBasicType;
 import icu.merky.jrabche.llvmir.types.IRType;
 
 import java.util.ArrayList;
@@ -163,7 +163,7 @@ public class IRValConstArray extends IRValConst {
         public IRValConstArray arr;
         List<Integer> cur, shape;
         InitList iList;
-        IRAtomType atomType;
+        IRBasicType basicType;
 
         public ConstArrayGenerator(InitList iList,IRValConstArray arr) {
             this.arr = arr;
@@ -172,7 +172,7 @@ public class IRValConstArray extends IRValConst {
                 cur.add(0);
             }
             this.shape = arr.shapes;
-            this.atomType = arr.getArrayType().getAtomType();
+            this.basicType = arr.getArrayType().getAtomType();
             this.iList=iList;
         }
 
@@ -185,7 +185,7 @@ public class IRValConstArray extends IRValConst {
             for (int i = 0; i < val.witch.size(); i++) {
                 if (val.witch.get(i) == InitList.ILType.CV) {
                     var cVal = val.constVals.get(pVal++);
-                    cVal = Helper.DoCompileTimeConversion(atomType, cVal);
+                    cVal = Helper.DoCompileTimeConversion(basicType, cVal);
                     arr.set(pos, cVal);
                     ArrayPosPlusN(shape, pos, 1, -1);
                 } else {

@@ -107,12 +107,10 @@ public class IRFunctionImpl implements IRFunction {
     }
 
     @Override
-    public void addBlock(String name) {
-        if(name.equals("entry"))
-            throw new RuntimeException("Block name can't be 'entry'");
-        curBB=new IRBasicBlockImpl();
-        curBB.setName(name);
-        bbs.add(curBB);
+    public IRBasicBlock addBlock() {
+        IRBasicBlock newBB = new IRBasicBlockImpl();
+        bbs.add(newBB);
+        return newBB;
     }
 
     @Override

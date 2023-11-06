@@ -31,17 +31,17 @@
 
 package icu.merky.jrabche.fe.visitor;
 
-import icu.merky.jrabche.llvmir.types.IRAtomType;
+import icu.merky.jrabche.llvmir.types.IRBasicType;
 
 public enum BType {
     INVALID, INT, FLOAT, VOID;
 
-    public IRAtomType toAtomType() {
+    public IRBasicType toBasicType() {
         return switch (this) {
-            case INVALID -> IRAtomType.INVALID;
-            case INT -> IRAtomType.INT;
-            case FLOAT -> IRAtomType.FLOAT;
-            case VOID -> IRAtomType.VOID;
+            case INVALID -> IRBasicType.INVALID;
+            case INT -> IRBasicType.INT;
+            case FLOAT -> IRBasicType.FLOAT;
+            case VOID -> IRBasicType.VOID;
         };
     }
 }

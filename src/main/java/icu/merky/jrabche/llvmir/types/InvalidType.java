@@ -2,7 +2,7 @@ package icu.merky.jrabche.llvmir.types;
 
 public class InvalidType extends IRType {
     public InvalidType() {
-        super(IRAtomType.INVALID);
+        super(IRBasicType.INVALID);
     }
 
 

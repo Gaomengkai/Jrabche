@@ -34,12 +34,14 @@ package icu.merky.jrabche.fe.visitor;
 import icu.merky.jrabche.llvmir.IRBuilder;
 import icu.merky.jrabche.llvmir.inst.IRInst;
 import icu.merky.jrabche.llvmir.inst.IRInstAlloca;
-import icu.merky.jrabche.llvmir.types.FunctionType;
-import icu.merky.jrabche.llvmir.types.IRType;
+import icu.merky.jrabche.llvmir.types.*;
 import icu.merky.jrabche.llvmir.values.IRVal;
 import icu.merky.jrabche.llvmir.values.IRValConst;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class VisitorContext {
     public BType bType = BType.INVALID;
@@ -53,8 +55,56 @@ public class VisitorContext {
     public IRVal lastVal;
     public IRType lastType;
     public FPType lastFPType;
+    public BBController bbController = new BBController();
     boolean inAtarashiiFunction = false;
     Renamer renamer = new Renamer();
+
+    public VisitorContext(IRBuilder builder) {
+        this.builder = builder;
+        this.initBuiltinFunctions();
+    }
+
+    private void initBuiltinFunctions() {
+        // void @llvm.memset.p0.i32(i32* %v1, i8 0, i32 12, i1 false)
+        var memsetType = new FunctionType(new VoidType(), List.of(new IntType(32), new IntType(8), new IntType(32), new IntType(1)));
+        globalFunctionSymbolTable.put("llvm.memset.p0.i32", memsetType);
+        // i32 @getint()
+        var getintType = new FunctionType(new IntType(32), List.of());
+        globalFunctionSymbolTable.put("getint", getintType);
+        // i32 @getfloat()
+        var getfloatType = new FunctionType(new FloatType(), List.of());
+        globalFunctionSymbolTable.put("getfloat", getfloatType);
+        // void @putint(i32)
+        var putintType = new FunctionType(new VoidType(), List.of(new IntType(32)));
+        globalFunctionSymbolTable.put("putint", putintType);
+        // void @putfloat(float)
+        var putfloatType = new FunctionType(new VoidType(), List.of(new FloatType()));
+        globalFunctionSymbolTable.put("putfloat", putfloatType);
+        // i32 @getarray(i32*)
+        var getarrayType = new FunctionType(new IntType(32), List.of(new PointerType(new IntType(32))));
+        globalFunctionSymbolTable.put("getarray", getarrayType);
+        // i32 @getfarray(float*)
+        var getfarrayType = new FunctionType(new FloatType(), List.of(new PointerType(new FloatType())));
+        globalFunctionSymbolTable.put("getfarray", getfarrayType);
+        // i32 @getch()
+        var getchType = new FunctionType(new IntType(32), List.of());
+        globalFunctionSymbolTable.put("getch", getchType);
+        // void @putch(i32)
+        var putchType = new FunctionType(new VoidType(), List.of(new IntType(32)));
+        globalFunctionSymbolTable.put("putch", putchType);
+        // void @putarray(i32, i32*)
+        var putarrayType = new FunctionType(new VoidType(), List.of(new IntType(32), new PointerType(new IntType(32))));
+        globalFunctionSymbolTable.put("putarray", putarrayType);
+        // void @putfarray(i32, float*)
+        var putfarrayType = new FunctionType(new VoidType(), List.of(new IntType(32), new PointerType(new FloatType())));
+        globalFunctionSymbolTable.put("putfarray", putfarrayType);
+        // void @_sysy_starttime(i32)
+        var _sysy_starttimeType = new FunctionType(new VoidType(), List.of(new IntType(32)));
+        globalFunctionSymbolTable.put("_sysy_starttime", _sysy_starttimeType);
+        // void @_sysy_stoptime(i32)
+        var _sysy_stoptimeType = new FunctionType(new VoidType(), List.of(new IntType(32)));
+        globalFunctionSymbolTable.put("_sysy_stoptime", _sysy_stoptimeType);
+    }
 
     public void push(String name, IRVal val) {
         lc.push(name, val);
@@ -63,13 +113,24 @@ public class VisitorContext {
     public IRVal query(String name) {
         return lc.query(name);
     }
+
     public FunctionType queryFunctionType(String name) {
         return globalFunctionSymbolTable.get(name);
     }
+
     public IRInst addInst(IRInst inst) {
         builder.curFunc().curBB().addInst(inst);
         return inst;
     }
+
+    /**
+     * <h3>Attention: <code>C.lastVal</code> modified.</h3>
+     * @param inst instruction to be added
+     */
+    public void addAndUpdate(IRInst inst) {
+        lastVal = addInst(inst);
+    }
+
     public IRInstAlloca addAlloca(IRInstAlloca alloca) {
         return builder.curFunc().addAlloca(alloca);
     }

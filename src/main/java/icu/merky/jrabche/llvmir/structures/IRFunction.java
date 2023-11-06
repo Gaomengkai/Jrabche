@@ -19,7 +19,7 @@ public interface IRFunction {
 
     IRValFP addFP(FPType ty);
 
-    void addBlock(String name);
+    IRBasicBlock addBlock();
 
     void setCurrentBlock(String name);
 

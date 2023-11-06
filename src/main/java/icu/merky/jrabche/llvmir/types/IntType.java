@@ -4,7 +4,7 @@ public class IntType extends IRType {
     private int bitWidth = 32;
 
     public IntType() {
-        super(IRAtomType.INT);
+        super(IRBasicType.INT);
     }
 
     public IntType(int bitWidth) {

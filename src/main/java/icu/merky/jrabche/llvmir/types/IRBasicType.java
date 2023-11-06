@@ -1,6 +1,6 @@
 package icu.merky.jrabche.llvmir.types;
 
-public enum IRAtomType {
+public enum IRBasicType {
     INVALID, INT, FLOAT, VOID, ARRAY, POINTER, FUNCTION, LABEL, ZEROINITIALIZER;
 
     public IRType toIRType() {

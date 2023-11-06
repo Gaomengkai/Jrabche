@@ -31,13 +31,13 @@
 
 package icu.merky.jrabche.llvmir.inst;
 
-import icu.merky.jrabche.llvmir.types.IRAtomType;
+import icu.merky.jrabche.llvmir.types.IRBasicType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
 public class IRInstReturn extends IRInst {
     IRVal opVal;
 
-    public IRInstReturn(IRAtomType ty, IRVal opVal) {
+    public IRInstReturn(IRBasicType ty, IRVal opVal) {
         super(null, InstID.ReturnInst, ty.toIRType());
         this.opVal = opVal;
     }

@@ -31,12 +31,14 @@
 
 package icu.merky.jrabche.fe.visitor;
 
+import icu.merky.jrabche.exceptions.CompileException;
 import icu.merky.jrabche.fe.parser.SylangParser;
 import icu.merky.jrabche.fe.parser.SylangVisitor;
 import icu.merky.jrabche.helper.Helper;
 import icu.merky.jrabche.helper.InitList;
 import icu.merky.jrabche.llvmir.IRBuilder;
 import icu.merky.jrabche.llvmir.inst.*;
+import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
 import icu.merky.jrabche.llvmir.structures.impl.IRFunctionImpl;
 import icu.merky.jrabche.llvmir.types.*;
 import icu.merky.jrabche.llvmir.values.*;
@@ -54,8 +56,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
     public final VisitorContext C;
 
     public SylangVisitorImpl(IRBuilder builder) {
-        this.C = new VisitorContext();
-        C.builder = builder;
+        this.C = new VisitorContext(builder);
     }
 
     /**
@@ -154,7 +155,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
     @Finished
     public Void visitConstDef(SylangParser.ConstDefContext ctx) {
         // constDef: Ident (Lbracket exp Rbracket)* Assign initVal;
-        var atomType = C.bType.toAtomType();
+        var atomType = C.bType.toBasicType();
         var name = ctx.Ident().getText();
         ctx.initVal().accept(this);
         var initVal = C.lastVal;
@@ -205,8 +206,11 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
     @Override
     public Void visitVarDef(SylangParser.VarDefContext ctx) {
         // varDef: Ident (Lbracket exp Rbracket)* (Assign initVal)?;
-        IRAtomType atomType = C.bType.toAtomType();
+        IRBasicType atomType = C.bType.toBasicType();
         String name = ctx.Ident().getText();
+        if(C.lc.queryLocal(name) != null) {
+            throw new CompileException("redefinition of variable `" + name+"`", ctx.Ident());
+        }
         List<Integer> shape = getShapeFromConstExp(ctx.exp());
         // global, must be a const.
         if (C.lc.inGlobal()) globalVarDef(ctx, atomType, name, shape);
@@ -220,7 +224,8 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
                     try (AutoDive ignored = new AutoDive(C.needLoad, true)) {
                         ctx.initVal().accept(this);
                         DoRuntimeConversion(C, atomType, C.lastVal);
-                        C.lc.push(name, C.lastVal);
+                        C.addAndUpdate(new IRInstStore(C.lastVal, alloca));
+                        C.push(name, alloca);
                     } catch (Exception e) {
                         e.printStackTrace();
                         throw new RuntimeException(e);
@@ -230,7 +235,29 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
                     C.push(name, alloca);
                 }
             } else {
-                // TODO impl local array
+                // local var, array
+                ArrayType arrayType = ArrayType.FromShape(atomType, shape);
+                IRInstAlloca alloca = C.addAlloca(new IRInstAlloca(name, arrayType));
+                if (ctx.initVal() != null) {
+                    // local var, array with init
+                    try (AutoDive ignored = new AutoDive(C.needLoad, true)) {
+                        ctx.initVal().accept(this);
+                        InitList il = (InitList) C.lastVal;
+                        IRValConstArray carr = IRValConstArray.FromInitList(il, arrayType);
+                        // todo store array inner data to memory using gep and store
+                        C.lc.push(name, new IRVarArray(carr));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    // todo impl local array without init
+                    // local var, array without init
+                    C.push(name, new IRVarArray(arrayType));
+                    // in sy def, local arr must init with 0.
+                    // %v1 = bitcast [3 x i32]* %v0 to i32*
+                    // call void @llvm.memset.p0.i32(i32* %v1, i8 0, i32 <size in bytes>, i1 false)
+                }
             }
         }
 
@@ -238,7 +265,10 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
     }
 
     @Finished
-    private void globalVarDef(SylangParser.VarDefContext ctx, IRAtomType atomType, String name, List<Integer> shape) {
+    private void globalVarDef(SylangParser.VarDefContext ctx, IRBasicType atomType, String name, List<Integer> shape) {
+        if(C.query(name) != null) {
+            throw new CompileException("redefinition of variable `" + name+"`", ctx.Ident());
+        }
         try (AutoDive ignored = new AutoDive(C.isConst, true)) {
             if (shape.isEmpty()) {
                 // scalar
@@ -247,7 +277,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
                     IRValConst converted = Helper.DoCompileTimeConversion(atomType, C.lastVal);
                     C.lc.push(name, converted);
                 } else {
-                    C.lc.push(name, IRValConstInt.Zero(C.bType.toAtomType()));
+                    C.lc.push(name, IRValConstInt.Zero(C.bType.toBasicType()));
                 }
             } else {
                 // array
@@ -290,7 +320,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
     @Override
     public Void visitInitList(SylangParser.InitListContext ctx) {
         if (C.isConst.get()) {
-            var il = new InitList(C.bType.toAtomType());
+            var il = new InitList(C.bType.toBasicType());
             for (SylangParser.InitValContext initValContext : ctx.initVal()) {
                 initValContext.accept(this);
                 if (C.lastVal instanceof InitList ilGot) {
@@ -316,7 +346,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
     @Override
     public Void visitFuncDef(SylangParser.FuncDefContext ctx) {
         ctx.funcType().accept(this);
-        var funcRetType = C.bType.toAtomType().toIRType();
+        var funcRetType = C.bType.toBasicType().toIRType();
         String name = ctx.Ident().getText();
         List<FPType> fpTypes = new ArrayList<>();
         if (ctx.funcFParams() != null) {
@@ -335,19 +365,18 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         C.lc.dive();
         C.inAtarashiiFunction = true;
         // add fParams alloca and store.
-        fpTypes.forEach(this::dealFpInit);
+        fpTypes.forEach(fpType -> {
+            var alloca = C.addAlloca(new IRInstAlloca(fpType.name(), fpType.type()));
+            C.lc.push(fpType.name(), alloca);
+            var f = C.builder.curFunc().addFP(fpType);
+            C.addInst(new IRInstStore(f, alloca));
+        });
+        // accept blocks
         ctx.block().accept(this);
         C.inAtarashiiFunction = false;
         C.lc.ascend();
         C.builder.curFunc().finishFunction();
         return null;
-    }
-
-    private void dealFpInit(FPType fpType) {
-        var alloca = C.addAlloca(new IRInstAlloca(fpType.name(), fpType.type()));
-        C.lc.push(fpType.name(), alloca);
-        var f = C.builder.curFunc().addFP(fpType);
-        C.addInst(new IRInstStore(f, alloca));
     }
 
     /**
@@ -393,7 +422,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
     public Void visitScalarParam(SylangParser.ScalarParamContext ctx) {
         var name = ctx.Ident().getText();
         ctx.bType().accept(this);
-        C.lastFPType = new FPType(C.bType.toAtomType().toIRType(), name);
+        C.lastFPType = new FPType(C.bType.toBasicType().toIRType(), name);
         return null;
     }
 
@@ -411,10 +440,10 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         ctx.bType().accept(this);
         List<Integer> shape = getShapeFromConstExp(ctx.exp());
         if (shape.isEmpty()) {
-            C.lastFPType = new FPType(PointerType.MakePointer(C.bType.toAtomType().toIRType()),
+            C.lastFPType = new FPType(PointerType.MakePointer(C.bType.toBasicType().toIRType()),
                     ctx.Ident().getText());
         } else {
-            ArrayType arrayType = ArrayType.FromShape(C.bType.toAtomType(), shape);
+            ArrayType arrayType = ArrayType.FromShape(C.bType.toBasicType(), shape);
             PointerType pointerType = PointerType.MakePointer(arrayType);
             C.lastFPType = new FPType(pointerType, ctx.Ident().getText());
         }
@@ -462,12 +491,30 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
     /**
      * Visit a parse tree produced by the {@code assign}
      * labeled alternative in {@link SylangParser#stmt}.
+     * <code>stmt:
+     * lVal Assign exp Semicolon					# assign</code>
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
     @Override
     public Void visitAssign(SylangParser.AssignContext ctx) {
+        // L
+        C.needLoad.dive(false);
+        ctx.lVal().accept(this);
+        C.needLoad.ascend();
+        IRVal lVal = C.lastVal;
+        // R
+        C.needLoad.dive(true);
+        ctx.exp().accept(this);
+        C.needLoad.ascend();
+        IRVal rVal = C.lastVal;
+        // checkType
+        assert lVal.getType().isPointer();
+        // lVal is from alloca or getelementptr, とにかく，lVal is a pointer.
+        IRType lValInnerType = ((PointerType) lVal.getType()).getElementType();
+        DoRuntimeConversion(C, lValInnerType.toBasicType(), rVal);
+        C.lastVal = C.addInst(new IRInstStore(C.lastVal, lVal));
         return null;
     }
 
@@ -483,12 +530,14 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
     @Finished
     public Void visitReturn(SylangParser.ReturnContext ctx) {
         visitChildren(ctx);
-        IRAtomType atomType = C.builder.curFunc().getFunctionType().toAtomType();
-        if (atomType == IRAtomType.VOID) {
-            C.addInst(new IRInstReturn(IRAtomType.VOID, null));
+        IRBasicType atomType = C.builder.curFunc().getFunctionType().getRetType().toBasicType();
+        if (atomType == IRBasicType.VOID) {
+            C.addInst(new IRInstReturn(IRBasicType.VOID, null));
         } else {
             if (ctx.exp() == null) throw new RuntimeException("returning void in non-void function");
+            C.needLoad.dive(true);
             ctx.exp().accept(this);
+            C.needLoad.ascend();
             DoRuntimeConversion(C, atomType, C.lastVal);
             C.addInst(new IRInstReturn(atomType, C.lastVal));
         }
@@ -503,7 +552,9 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
      * @return the visitor result
      */
     @Override
+    @Finished
     public Void visitCond(SylangParser.CondContext ctx) {
+        visitChildren(ctx);
         return null;
     }
 
@@ -601,6 +652,56 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
      */
     @Override
     public Void visitIfElse(SylangParser.IfElseContext ctx) {
+        // prepare
+        IRBasicBlock trueBB,falseBB,afterBB;
+        int ifElseCount = BBController.ifCount.getAndIncrement();
+        trueBB=C.builder.curFunc().addBlock();
+        trueBB.setName("if.then."+ifElseCount);
+        afterBB=C.builder.curFunc().addBlock();
+        afterBB.setName("if.end."+ifElseCount);
+        if(ctx.Else()!=null) {
+            falseBB=C.builder.curFunc().addBlock();
+            falseBB.setName("if.else."+ifElseCount);
+        } else {
+            falseBB=afterBB;
+        }
+
+        C.bbController.pushIf(trueBB,falseBB,afterBB,C.lc.getLayerIndex());
+
+        // 1. add COND sen
+        ctx.cond().accept(this);
+        IRVal cond = C.lastVal;
+
+        // 2. add BR
+        C.addInst(new IRInstBr(cond,trueBB,falseBB));
+
+        // 3. move to true
+        C.builder.curFunc().setCurrentBlock(trueBB);
+
+        // 4. accept true
+        ctx.stmt(0).accept(this);
+
+        // 5. add BR
+        C.addInst(new IRInstBr(afterBB));
+
+        // 6-8 if there is else
+        if(ctx.Else()!=null){
+            // 6. move to FalseBB
+            C.builder.curFunc().setCurrentBlock(falseBB);
+            if(ctx.stmt().size()==2) {
+                // 7. accept false
+                ctx.stmt(1).accept(this);
+            }
+
+            //8. add BR
+            C.addInst(new IRInstBr(afterBB));
+        }
+
+        // 9. move to AfterBB
+        C.builder.curFunc().setCurrentBlock(afterBB);
+
+        // 10. status
+        C.bbController.pop();
         return null;
     }
 
@@ -647,7 +748,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
 
     /**
      * Visit a parse tree produced by the {@code mul_}
-     * labeled alternative in {@link SylangParser#mulExp}.
+     * labeled alternative in {@link SylangParser#}.
      *
      * @param ctx the parse tree
      * @return the visitor result
@@ -661,10 +762,12 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         else if (ctx.Mod() != null) mathOP = IRInstMath.MathOP.Rem;
         else throw new RuntimeException("unknown mathOP");
 
+        C.needLoad.dive(true);
         ctx.mulExp().accept(this);
         IRVal left = C.lastVal;
         ctx.unaryExp().accept(this);
         IRVal right = C.lastVal;
+        C.needLoad.ascend();
 
         boolean isConst = C.isConst.get() || ((left instanceof IRValConst) && (right instanceof IRValConst));
 
@@ -678,7 +781,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
 
     /**
      * Visit a parse tree produced by the {@code add_}
-     * labeled alternative in {@link SylangParser#addExp}.
+     * labeled alternative in {@link SylangParser#}.
      * <code>addExp Add mulExp</code>
      *
      * @param ctx the parse tree
@@ -691,10 +794,12 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         if (ctx.Add() != null) mathOP = IRInstMath.MathOP.Add;
         else mathOP = IRInstMath.MathOP.Sub;
 
+        C.needLoad.dive(true);
         ctx.addExp().accept(this);
         IRVal left = C.lastVal;
         ctx.mulExp().accept(this);
         IRVal right = C.lastVal;
+        C.needLoad.ascend();
 
         boolean isConst = C.isConst.get() || ((left instanceof IRValConst) && (right instanceof IRValConst));
 
@@ -715,13 +820,43 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
      */
     @Override
     public Void visitUnary_(SylangParser.Unary_Context ctx) {
+        // add sub not
+        enum Ops {
+            ADD, SUB, NOT
+        }
+        Ops op;
+        if (ctx.Add() != null) op = Ops.ADD;
+        else if (ctx.Sub() != null) op = Ops.SUB;
+        else if (ctx.Not() != null) op = Ops.NOT;
+        else throw new RuntimeException("unknown unary op");
+
+        C.needLoad.dive(true);
+        ctx.unaryExp().accept(this);
+        C.needLoad.ascend();
+        IRVal val = C.lastVal;
+        var atomType = val.getType().toBasicType();
+
+        boolean isConst = C.isConst.get() || ((val instanceof IRValConst));
+        switch (op) {
+            case ADD -> {
+                // do nothing
+            }
+            case SUB -> {
+                var zero = IRValConst.Zero(atomType);
+                DoRuntimeCalculation(C,zero,val,IRInstMath.MathOP.Sub);
+            }
+            case NOT -> {
+                var zero = IRValConst.Zero(atomType);
+                C.addAndUpdate(IRInstCmpFactory.createCmpInst(IRInstIcmp.IcmpOp.EQ, val, zero, atomType));
+            }
+        }
         return null;
     }
 
 
     /**
      * Visit a parse tree produced by the {@code relExp_}
-     * labeled alternative in {@link SylangParser#relExp}.
+     * labeled alternative in {@link SylangParser#}.
      * <br/> lt,gt,leq,geq
      *
      * @param ctx the parse tree
@@ -729,31 +864,62 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
      */
     @Override
     public Void visitRelExp_(SylangParser.RelExp_Context ctx) {
+        // LT GT LEQ GEQ
+        IRInstIcmp.IcmpOp op;
+        if(ctx.Leq()!=null) op= IRInstIcmp.IcmpOp.SLE;
+        else if(ctx.Lt()!=null) op = IRInstIcmp.IcmpOp.SLT;
+        else if(ctx.Gt()!=null) op= IRInstIcmp.IcmpOp.SGT;
+        else if(ctx.Geq()!=null) op = IRInstIcmp.IcmpOp.SGE;
+        else throw new RuntimeException("unknown icmp op");
+
+        C.needLoad.dive(true);
+        ctx.relExp().accept(this);
+        IRVal left = C.lastVal;
+        ctx.addExp().accept(this);
+        IRVal right = C.lastVal;
+        C.needLoad.ascend();
+        DoRuntimeComparison(C, left, right, op);
         return null;
     }
 
 
     /**
      * Visit a parse tree produced by the {@code neq}
-     * labeled alternative in {@link SylangParser#eqExp}.
-     *
+     * labeled alternative in {@link SylangParser#}.
+     *<code>	eqExp Neq relExp	# neq;</code>
      * @param ctx the parse tree
      * @return the visitor result
      */
     @Override
     public Void visitNeq(SylangParser.NeqContext ctx) {
+        IRInstIcmp.IcmpOp op = IRInstIcmp.IcmpOp.NE;
+        C.needLoad.dive(true);
+        ctx.eqExp().accept(this);
+        IRVal left = C.lastVal;
+        ctx.relExp().accept(this);
+        IRVal right = C.lastVal;
+        C.needLoad.ascend();
+        DoRuntimeComparison(C, left, right, op);
         return null;
     }
 
     /**
      * Visit a parse tree produced by the {@code eq}
-     * labeled alternative in {@link SylangParser#eqExp}.
+     * labeled alternative in {@link SylangParser#}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
     @Override
     public Void visitEq(SylangParser.EqContext ctx) {
+        IRInstIcmp.IcmpOp op = IRInstIcmp.IcmpOp.EQ;
+        C.needLoad.dive(true);
+        ctx.eqExp().accept(this);
+        IRVal left = C.lastVal;
+        ctx.relExp().accept(this);
+        IRVal right = C.lastVal;
+        C.needLoad.ascend();
+        DoRuntimeComparison(C, left, right, op);
         return null;
     }
 
@@ -763,7 +929,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
 
     /**
      * Visit a parse tree produced by the {@code and}
-     * labeled alternative in {@link SylangParser#lAndExp}.
+     * labeled alternative in {@link SylangParser#}.
      *
      * @param ctx the parse tree
      * @return the visitor result
@@ -775,7 +941,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
 
     /**
      * Visit a parse tree produced by the {@code or}
-     * labeled alternative in {@link SylangParser#lOrExp}.
+     * labeled alternative in {@link SylangParser#}.
      *
      * @param ctx the parse tree
      * @return the visitor result
@@ -793,7 +959,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
 
     /**
      * Visit a parse tree produced by the {@code lOrExp_lAnd}
-     * labeled alternative in {@link SylangParser#lOrExp}.
+     * labeled alternative in {@link SylangParser#}.
      *
      * @param ctx the parse tree
      * @return the visitor result
@@ -807,7 +973,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
 
     /**
      * Visit a parse tree produced by the {@code lAndExp_eq}
-     * labeled alternative in {@link SylangParser#lAndExp}.
+     * labeled alternative in {@link SylangParser#}.
      *
      * @param ctx the parse tree
      * @return the visitor result
@@ -821,7 +987,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
 
     /**
      * Visit a parse tree produced by the {@code relExp_add}
-     * labeled alternative in {@link SylangParser#relExp}.
+     * labeled alternative in {@link SylangParser#}.
      *
      * @param ctx the parse tree
      * @return the visitor result
@@ -835,7 +1001,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
 
     /**
      * Visit a parse tree produced by the {@code eqExp_rel}
-     * labeled alternative in {@link SylangParser#eqExp}.
+     * labeled alternative in {@link SylangParser#}.
      *
      * @param ctx the parse tree
      * @return the visitor result
@@ -849,7 +1015,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
 
     /**
      * Visit a parse tree produced by the {@code addExp_mul}
-     * labeled alternative in {@link SylangParser#addExp}.
+     * labeled alternative in {@link SylangParser#}.
      *
      * @param ctx the parse tree
      * @return the visitor result
@@ -864,7 +1030,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
 
     /**
      * Visit a parse tree produced by the {@code mulExp_unray}
-     * labeled alternative in {@link SylangParser#mulExp}.
+     * labeled alternative in {@link SylangParser#}.
      *
      * @param ctx the parse tree
      * @return the visitor result

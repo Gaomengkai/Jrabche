@@ -31,45 +31,50 @@
 
 package icu.merky.jrabche.llvmir.inst;
 
-import icu.merky.jrabche.helper.Helper;
+import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
+import icu.merky.jrabche.llvmir.types.VoidType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
-public class IRInstMath extends IRInst {
-    public enum MathOP {
-        Invalid, Add, Sub, Mul, Div, Rem, Shl, Shr, And, Or, Xor
+public class IRInstBr extends IRInst {
+    IRBasicBlock trueBB,falseBB;
+    IRVal cond;
+    public IRInstBr(IRVal cond, IRBasicBlock trueBB, IRBasicBlock falseBB) {
+        super(InstID.BrInst, new VoidType());
+        this.cond=cond;
+        this.trueBB = trueBB;
+        this.falseBB = falseBB;
     }
-
-    MathOP mathOP;
-    IRVal lhs, rhs;
-
-    public IRInstMath(MathOP mathOP,IRVal v1, IRVal v2) {
-        super(null, InstID.MathInst, Helper.ResolveType(v1.getType(), v2.getType()).toIRType());
-        this.mathOP=mathOP;
-        this.lhs=v1;
-        this.rhs=v2;
+    public IRInstBr(IRBasicBlock trueBB) {
+        super(InstID.BrInst, new VoidType());
+        this.trueBB = trueBB;
+        this.falseBB = null;
+        this.cond=null;
     }
-
     @Override
     public String toString() {
-        // %v18 = add i32 %v16, %v17
-        StringBuilder sb = new StringBuilder();
-        sb.append(name).append(" = ");
-        if(this.type.isFloat())
-            sb.append("f");
-        sb.append(mathOP.toString().toLowerCase()).append(" ");
-        sb.append(type.toString()).append(" ");
-        sb.append(lhs.asValue()).append(", ").append(rhs.asValue());
-        return sb.toString();
+        if(cond==null){
+            //br label %L1
+            return "br label %"+trueBB.getName();
+        }
+        //br i1 %v8, label %L1, label %L2
+        return "br i1 "+cond.asValue()+", label %"+trueBB.getName()+", label %"+falseBB.getName();
     }
 
     @Override
     public boolean replace(IRVal inst, IRVal newInst) {
-        if(lhs.equals(inst)) {
-            lhs=newInst;
+        if(cond==inst){
+            cond=newInst;
             return true;
         }
-        if (rhs.equals(inst)) {
-            rhs=newInst;
+        return false;
+    }
+    public boolean replaceBasicBlock(IRBasicBlock old, IRBasicBlock newBB){
+        if(trueBB==old){
+            trueBB=newBB;
+            return true;
+        }
+        if(falseBB==old){
+            falseBB=newBB;
             return true;
         }
         return false;
@@ -77,6 +82,6 @@ public class IRInstMath extends IRInst {
 
     @Override
     public String asValue() {
-        return name;
+        return null;
     }
 }

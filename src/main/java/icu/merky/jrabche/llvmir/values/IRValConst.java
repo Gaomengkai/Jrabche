@@ -1,6 +1,6 @@
 package icu.merky.jrabche.llvmir.values;
 
-import icu.merky.jrabche.llvmir.types.IRAtomType;
+import icu.merky.jrabche.llvmir.types.IRBasicType;
 import icu.merky.jrabche.llvmir.types.IRType;
 
 public abstract class IRValConst extends IRVal {
@@ -15,10 +15,10 @@ public abstract class IRValConst extends IRVal {
     public static IRValConstFloat ZeroFloat() {
         return new IRValConstFloat(0);
     }
-    public static IRValConstI1 ZeroBool() {
-        return new IRValConstI1(0);
+    public static IRValConstBool ZeroBool() {
+        return new IRValConstBool(0);
     }
-    public static IRValConst Zero(IRAtomType type) {
+    public static IRValConst Zero(IRBasicType type) {
         switch (type) {
             case INT -> {
                 return ZeroInt();

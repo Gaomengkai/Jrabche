@@ -29,54 +29,22 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.llvmir.inst;
+package icu.merky.jrabche.exceptions;
 
-import icu.merky.jrabche.helper.Helper;
-import icu.merky.jrabche.llvmir.values.IRVal;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
-public class IRInstMath extends IRInst {
-    public enum MathOP {
-        Invalid, Add, Sub, Mul, Div, Rem, Shl, Shr, And, Or, Xor
+public class CompileException extends RuntimeException{
+    public CompileException(String msg, int lineno, int colno) {
+        super("Compile error at line " + lineno + ", column " + colno + ": " + msg);
     }
 
-    MathOP mathOP;
-    IRVal lhs, rhs;
-
-    public IRInstMath(MathOP mathOP,IRVal v1, IRVal v2) {
-        super(null, InstID.MathInst, Helper.ResolveType(v1.getType(), v2.getType()).toIRType());
-        this.mathOP=mathOP;
-        this.lhs=v1;
-        this.rhs=v2;
+    public CompileException(String msg, TerminalNode ctx) {
+        super("Compile error at line " +ctx.getSymbol().getLine() + ", column " + ctx.getSymbol().getCharPositionInLine() + ": " + msg);
     }
 
-    @Override
-    public String toString() {
-        // %v18 = add i32 %v16, %v17
-        StringBuilder sb = new StringBuilder();
-        sb.append(name).append(" = ");
-        if(this.type.isFloat())
-            sb.append("f");
-        sb.append(mathOP.toString().toLowerCase()).append(" ");
-        sb.append(type.toString()).append(" ");
-        sb.append(lhs.asValue()).append(", ").append(rhs.asValue());
-        return sb.toString();
-    }
-
-    @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if(lhs.equals(inst)) {
-            lhs=newInst;
-            return true;
-        }
-        if (rhs.equals(inst)) {
-            rhs=newInst;
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public String asValue() {
-        return name;
+    public CompileException(String msg, ParserRuleContext ctx) {
+        super("Compile error at line " +ctx.getStart().getLine() + ", column " + ctx.getStart().getCharPositionInLine() + ": " + msg);
     }
 }

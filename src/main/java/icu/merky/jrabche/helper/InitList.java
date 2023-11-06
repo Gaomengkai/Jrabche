@@ -32,7 +32,7 @@
 package icu.merky.jrabche.helper;
 
 import icu.merky.jrabche.exceptions.NotImplementedException;
-import icu.merky.jrabche.llvmir.types.IRAtomType;
+import icu.merky.jrabche.llvmir.types.IRBasicType;
 import icu.merky.jrabche.llvmir.types.InvalidType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 import icu.merky.jrabche.llvmir.values.IRValConst;
@@ -41,12 +41,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class InitList extends IRVal {
-    public IRAtomType containedType;
+    public IRBasicType containedType;
     public List<InitList> initLists;
     public List<IRValConst> constVals;
     public List<ILType> witch;
     public List<Integer> indices;
-    public InitList(IRAtomType atomType) {
+    public InitList(IRBasicType atomType) {
         super(new InvalidType());
         containedType = atomType;
         witch = new ArrayList<>();

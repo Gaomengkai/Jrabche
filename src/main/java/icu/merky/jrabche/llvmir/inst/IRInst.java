@@ -148,6 +148,11 @@ public abstract class IRInst extends IRVal implements Cloneable, Replaceable, Va
         return type;
     }
 
+    @Override
+    public void setName(String name) {
+        super.setName(name.startsWith("%") ? name : "%" + name);
+    }
+
     protected enum InstID {
         Invalid,
         AllocaInst,
