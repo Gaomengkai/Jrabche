@@ -11,12 +11,39 @@ public class PointerType extends IRType {
     static public PointerType MakePointer(IRType elementType) {
         return new PointerType(elementType);
     }
+    static public PointerType MakePointer(IRType elementType, int level) {
+        PointerType pointerType = new PointerType(elementType);
+        for (int i = 1; i < level; i++) {
+            pointerType = new PointerType(pointerType);
+        }
+        return pointerType;
+    }
 
-    static public IRType dePointer(IRType type) {
+    static public IRType DePointer(IRType type) {
         if (type instanceof PointerType p) {
             return p.getElementType();
         }
         throw new RuntimeException("Not a pointer");
+    }
+
+    static public IRType DePointer(IRType type, int level) {
+        for (int i = 0; i < level; i++) {
+            type = DePointer(type);
+        }
+        return type;
+    }
+
+    static public int PointerLevel(IRType type) {
+        int level = 0;
+        while (type instanceof PointerType p) {
+            level++;
+            type = p.getElementType();
+        }
+        return level;
+    }
+
+    public int getPointerLevel() {
+        return PointerLevel(this);
     }
 
     public IRType getElementType() {

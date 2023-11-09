@@ -58,7 +58,7 @@ public class IRInstFcmp extends IRInst {
 
     @Override
     public String toString() {
-        return name + " = fcmp " + op.toString() + " " + opType.toString() + " " + lhs.asValue() + ", " + rhs.asValue();
+        return name + " = fcmp " + op.toString().toLowerCase() + " " + opType.toString() + " " + lhs.asValue() + ", " + rhs.asValue();
     }
 
     @Override

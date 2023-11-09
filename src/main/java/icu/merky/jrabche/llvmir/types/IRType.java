@@ -45,6 +45,10 @@ abstract public class IRType implements Cloneable {
         return type == IRBasicType.FLOAT;
     }
 
+    public boolean isScalar() {
+        return type == IRBasicType.INT || type == IRBasicType.FLOAT;
+    }
+
     public boolean isVoid() {
         return type == IRBasicType.VOID;
     }

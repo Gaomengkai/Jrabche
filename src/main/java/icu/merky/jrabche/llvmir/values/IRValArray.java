@@ -29,35 +29,35 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.llvmir.inst;
+package icu.merky.jrabche.llvmir.values;
 
-import icu.merky.jrabche.llvmir.types.IRBasicType;
-import icu.merky.jrabche.llvmir.values.IRVal;
+import icu.merky.jrabche.llvmir.types.ArrayType;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
-public class IRInstCmpFactory{
-    static private final Map<IRInstIcmp.IcmpOp, IRInstFcmp.FcmpOp> opMap = new HashMap<>();
-    static {
-        opMap.put(IRInstIcmp.IcmpOp.EQ, IRInstFcmp.FcmpOp.OEQ);
-        opMap.put(IRInstIcmp.IcmpOp.NE, IRInstFcmp.FcmpOp.UNE);
-        opMap.put(IRInstIcmp.IcmpOp.SGT, IRInstFcmp.FcmpOp.OGT);
-        opMap.put(IRInstIcmp.IcmpOp.SGE, IRInstFcmp.FcmpOp.OGE);
-        opMap.put(IRInstIcmp.IcmpOp.SLT, IRInstFcmp.FcmpOp.OLT);
-        opMap.put(IRInstIcmp.IcmpOp.SLE, IRInstFcmp.FcmpOp.OLE);
-        opMap.put(IRInstIcmp.IcmpOp.UGT, null);
-        opMap.put(IRInstIcmp.IcmpOp.UGE, null);
-        opMap.put(IRInstIcmp.IcmpOp.ULT, null);
-        opMap.put(IRInstIcmp.IcmpOp.ULE, null);
+public class IRValArray extends IRValConstArray {
+    /**
+     * Create a new constant array value.
+     *
+     * @param ty The type of the array. Need initialize the shape of the array.
+     */
+    public IRValArray(ArrayType ty) {
+        super(ty);
+        setConst(false);
     }
-    public static IRInst createCmpInst(IRInstIcmp.IcmpOp op, IRVal lhs, IRVal rhs, IRBasicType type){
-        if(type== IRBasicType.INT){
-            return new IRInstIcmp(op, lhs, rhs);
-        } else if(type== IRBasicType.FLOAT){
-            return new IRInstFcmp(opMap.get(op), lhs, rhs);
-        } else {
-            throw new RuntimeException("Unknown type");
-        }
+
+    public IRValArray(IRValConstArray val) {
+        super(val);
+        setConst(false);
+    }
+
+    @Override
+    public IRValConst get(List<Integer> target) {
+        return super.get(target);
+    }
+
+    @Override
+    public void set(List<Integer> target, IRVal val) {
+        super.set(target, val);
     }
 }

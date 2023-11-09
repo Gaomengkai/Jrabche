@@ -70,7 +70,7 @@ public class IRInstIcmp extends IRInst {
         //     %v13 = icmp sge i32 %v11, %v12
         return name +
                 " = icmp " +
-                op.toString() +
+                op.toString().toLowerCase() +
                 " " +
                 opType.toString() +
                 " " +

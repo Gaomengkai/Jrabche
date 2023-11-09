@@ -36,6 +36,9 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 public class CompileException extends RuntimeException{
+    public CompileException(String msg) {
+        super("Compile error: " + msg);
+    }
     public CompileException(String msg, int lineno, int colno) {
         super("Compile error at line " + lineno + ", column " + colno + ": " + msg);
     }

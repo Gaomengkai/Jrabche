@@ -35,16 +35,16 @@ import icu.merky.jrabche.exceptions.NotImplementedException;
 import icu.merky.jrabche.fe.visitor.FPType;
 import icu.merky.jrabche.llvmir.inst.IRInst;
 import icu.merky.jrabche.llvmir.inst.IRInstAlloca;
+import icu.merky.jrabche.llvmir.inst.IRInstReturn;
 import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
 import icu.merky.jrabche.llvmir.structures.IRFunction;
 import icu.merky.jrabche.llvmir.types.FunctionType;
+import icu.merky.jrabche.llvmir.types.IRBasicType;
 import icu.merky.jrabche.llvmir.types.IRType;
+import icu.merky.jrabche.llvmir.values.IRValConst;
 import icu.merky.jrabche.llvmir.values.IRValFP;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class IRFunctionImpl implements IRFunction {
@@ -59,7 +59,7 @@ public class IRFunctionImpl implements IRFunction {
      * Just a placeholder to store the function parameter types.
      * To match the LLVM IR `store` instruction, we use IRVal here.
      */
-    Map<String,IRValFP> fp = new HashMap<>();
+    Map<String, IRValFP> fp = new LinkedHashMap<>();
 
     static AtomicInteger counter = new AtomicInteger(0);
 
@@ -70,14 +70,15 @@ public class IRFunctionImpl implements IRFunction {
 
     public IRFunctionImpl(String name, FunctionType functionType) {
         this.functionType = functionType;
-        entryBB=new IRBasicBlockImpl();
+        entryBB = new IRBasicBlockImpl();
         entryBB.setName("entry");
-        this.bbs=new ArrayList<>();
+        this.bbs = new ArrayList<>();
         this.alloca = new ArrayList<>();
         bbs.add(entryBB);
-        curBB=entryBB;
-        this.name=name;
+        curBB = entryBB;
+        this.name = name;
     }
+
     @Override
     public String getName() {
         return name;
@@ -85,7 +86,7 @@ public class IRFunctionImpl implements IRFunction {
 
     @Override
     public void setName(String name) {
-        this.name=name;
+        this.name = name;
     }
 
     @Override
@@ -193,6 +194,20 @@ public class IRFunctionImpl implements IRFunction {
                     irInst.setName("v." + count);
                 }
             }
+        }
+        // 3. check ret
+        for (IRBasicBlock bb : bbs) {
+            if ((bb.getTerminator() == null)) {
+                if (this.getFunctionType().getRetType().getBasicType() != IRBasicType.VOID) {
+                    var bType = this.getFunctionType().getRetType().toBasicType();
+                    bb.addInst(new IRInstReturn(bType, IRValConst.Zero(bType)));
+                } else
+                    bb.addInst(new IRInstReturn(IRBasicType.VOID, null));
+            }
+        }
+        // 4. chunk bb
+        for (IRBasicBlock bb : bbs) {
+            bb.chunkAfterTerminator();
         }
     }
 

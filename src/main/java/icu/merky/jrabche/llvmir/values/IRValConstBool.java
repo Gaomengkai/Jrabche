@@ -9,7 +9,7 @@ public class IRValConstBool extends IRValConst implements Wordzation {
 
     public IRValConstBool(int value) {
         super(new IntType(1));
-        this.value=value;
+        this.value=value==0?0:1;
     }
 
     public int getValue() {

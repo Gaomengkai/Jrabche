@@ -56,6 +56,8 @@ public class IRInstMath extends IRInst {
         sb.append(name).append(" = ");
         if(this.type.isFloat())
             sb.append("f");
+        else if(this.mathOP==MathOP.Rem||this.mathOP==MathOP.Div)
+            sb.append("s");
         sb.append(mathOP.toString().toLowerCase()).append(" ");
         sb.append(type.toString()).append(" ");
         sb.append(lhs.asValue()).append(", ").append(rhs.asValue());

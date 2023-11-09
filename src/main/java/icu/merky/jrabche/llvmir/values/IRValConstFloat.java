@@ -43,7 +43,7 @@ public class IRValConstFloat extends IRValConst implements Wordzation {
 
     @Override
     public String asValue() {
-        return String.valueOf(Double.doubleToLongBits(value));
+        return "0x"+Double.doubleToLongBits(value);
     }
 
     @Override

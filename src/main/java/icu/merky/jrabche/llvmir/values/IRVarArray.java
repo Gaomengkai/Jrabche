@@ -73,7 +73,7 @@ public class IRVarArray extends IRVal {
         if (constArray.getChildArrays() != null) {
             this.childArrays = new ArrayList<>();
             for (var childArray : constArray.getChildArrays()) {
-                if(childArray!=null) this.childArrays.add(new IRVarArray(childArray));
+                if (childArray != null) this.childArrays.add(new IRVarArray(childArray));
             }
         } else {
             this.childArrays = null;
@@ -82,7 +82,13 @@ public class IRVarArray extends IRVal {
 
     @Override
     public String asValue() {
-        throw new NotImplementedException();
+        if (valTypes.isEmpty()) {
+            return "zeroinitializer";
+        }
+        if(valTypes.stream().allMatch(v -> v == ValType.ZERO)) {
+            return "zeroinitializer";
+        }
+        throw new NotImplementedException("IRVarArray.asValue()");
     }
 
     public List<ValType> getValTypes() {

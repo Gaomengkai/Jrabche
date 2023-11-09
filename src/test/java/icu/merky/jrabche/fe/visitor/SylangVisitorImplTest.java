@@ -31,17 +31,15 @@
 
 package icu.merky.jrabche.fe.visitor;
 
-import icu.merky.jrabche.helper.InitList;
+import icu.merky.jrabche.helper.ConstInitList;
 import icu.merky.jrabche.fe.parser.SylangLexer;
 import icu.merky.jrabche.fe.parser.SylangParser;
+import icu.merky.jrabche.llvmir.IRBuilder;
 import icu.merky.jrabche.llvmir.IRBuilderImpl;
 import icu.merky.jrabche.llvmir.TestBuilder;
 import icu.merky.jrabche.llvmir.types.ArrayType;
 import icu.merky.jrabche.llvmir.types.IRBasicType;
-import icu.merky.jrabche.llvmir.values.IRValConstArray;
-import icu.merky.jrabche.llvmir.values.IRValConstFloat;
-import icu.merky.jrabche.llvmir.values.IRValConstInt;
-import icu.merky.jrabche.llvmir.values.IRVarArray;
+import icu.merky.jrabche.llvmir.values.*;
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.jupiter.api.Test;
@@ -61,7 +59,7 @@ class SylangVisitorImplTest {
         var parser = new SylangParser(new BufferedTokenStream(new SylangLexer(CharStreams.fromString(program))));
         var tree = parser.initVal();
         tree.accept(visitor);
-        InitList lastList = (InitList) visitor.C.lastVal;
+        ConstInitList lastList = (ConstInitList) visitor.C.lastVal;
         assertNotNull(lastList);
         assertEquals(3, lastList.initLists.size());
         assertEquals(2, lastList.constVals.size());
@@ -78,7 +76,7 @@ class SylangVisitorImplTest {
         var parser = new SylangParser(new BufferedTokenStream(new SylangLexer(CharStreams.fromString(program))));
         var tree = parser.initVal();
         tree.accept(visitor);
-        InitList lastList = (InitList) visitor.C.lastVal;
+        ConstInitList lastList = (ConstInitList) visitor.C.lastVal;
         assertNotNull(lastList);
         assertEquals(3, lastList.initLists.size());
         assertEquals(2, lastList.constVals.size());
@@ -125,6 +123,9 @@ class SylangVisitorImplTest {
         tree.accept(visitor);
         assertNotNull(C.query("a"));
         var val = C.query("a");
+        assertNull(C.lc.queryLocal("a"));
+        assert val instanceof IRValGlobal;
+        val = ((IRValGlobal) val).getValue();
         assertInstanceOf(IRValConstInt.class, val);
         assertEquals(14, ((IRValConstInt) val).getValue());
     }
@@ -142,6 +143,7 @@ class SylangVisitorImplTest {
         tree.accept(visitor);
         assertNotNull(C.query("apple"));
         var val = C.query("apple");
+        val = ((IRValGlobal) val).getValue();
         assertInstanceOf(IRValConstArray.class, val);
         var aVal = (IRValConstArray) val;
         assertEquals(2, aVal.getShapes().get(0));
@@ -172,6 +174,7 @@ class SylangVisitorImplTest {
 
         assertNotNull(C.query("apple"));
         var val = C.query("apple");
+        val = ((IRValGlobal) val).getValue();
         assertInstanceOf(IRValConstInt.class, val);
         assertEquals(3, ((IRValConstInt) val).getValue());
     }
@@ -189,8 +192,9 @@ class SylangVisitorImplTest {
 
         assertNotNull(C.query("apple"));
         var val = C.query("apple");
-        assertInstanceOf(IRVarArray.class, val);
-        var aVal = (IRVarArray) val;
+        val = ((IRValGlobal) val).getValue();
+        assertInstanceOf(IRValArray.class, val);
+        var aVal = (IRValArray) val;
         assertEquals(IRBasicType.INT, ((ArrayType)aVal.getType()).getAtomType());
         assertEquals(3, aVal.getShapes().get(0));
         assertEquals(1, aVal.getShapes().size());
@@ -235,11 +239,14 @@ class SylangVisitorImplTest {
         String funcString = C.builder.curFunc().toString();
         System.out.println(funcString);
 
-        assertNotNull(C.queryFunctionType("abc"));
+        assertNotNull(C.queryFunctionType("main"));
     }
 
-    private static VisitorContext getVisitorContext(String program) throws NoSuchFieldException, IllegalAccessException {
-        SylangVisitorImpl visitor = new SylangVisitorImpl(new IRBuilderImpl());
+    public static VisitorContext getVisitorContext(String program) throws NoSuchFieldException, IllegalAccessException {
+        return getVisitorContext(program,new IRBuilderImpl());
+    }
+    public static VisitorContext getVisitorContext(String program, IRBuilder builder) throws NoSuchFieldException, IllegalAccessException {
+        SylangVisitorImpl visitor = new SylangVisitorImpl(builder);
         Field c = SylangVisitorImpl.class.getDeclaredField("C");
         c.setAccessible(true);
         VisitorContext C = (VisitorContext) c.get(visitor);

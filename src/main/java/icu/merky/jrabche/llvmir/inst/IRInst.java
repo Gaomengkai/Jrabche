@@ -134,7 +134,7 @@ public abstract class IRInst extends IRVal implements Cloneable, Replaceable, Va
             return false;
         if(isCallInst()) {
             if(this instanceof IRInstCall call)
-                return call.getType().isVoid();
+                return !call.getType().isVoid();
             throw new RuntimeException("CallInst need IRInstCall");
         }
         return true;

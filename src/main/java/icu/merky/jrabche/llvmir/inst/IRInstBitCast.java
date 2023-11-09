@@ -31,33 +31,33 @@
 
 package icu.merky.jrabche.llvmir.inst;
 
-import icu.merky.jrabche.llvmir.types.IRBasicType;
+import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
-import java.util.HashMap;
-import java.util.Map;
+public class IRInstBitCast extends IRInst {
+    private IRVal val;
 
-public class IRInstCmpFactory{
-    static private final Map<IRInstIcmp.IcmpOp, IRInstFcmp.FcmpOp> opMap = new HashMap<>();
-    static {
-        opMap.put(IRInstIcmp.IcmpOp.EQ, IRInstFcmp.FcmpOp.OEQ);
-        opMap.put(IRInstIcmp.IcmpOp.NE, IRInstFcmp.FcmpOp.UNE);
-        opMap.put(IRInstIcmp.IcmpOp.SGT, IRInstFcmp.FcmpOp.OGT);
-        opMap.put(IRInstIcmp.IcmpOp.SGE, IRInstFcmp.FcmpOp.OGE);
-        opMap.put(IRInstIcmp.IcmpOp.SLT, IRInstFcmp.FcmpOp.OLT);
-        opMap.put(IRInstIcmp.IcmpOp.SLE, IRInstFcmp.FcmpOp.OLE);
-        opMap.put(IRInstIcmp.IcmpOp.UGT, null);
-        opMap.put(IRInstIcmp.IcmpOp.UGE, null);
-        opMap.put(IRInstIcmp.IcmpOp.ULT, null);
-        opMap.put(IRInstIcmp.IcmpOp.ULE, null);
+    public IRInstBitCast(IRVal val, IRType toType) {
+        super(InstID.BitCastInst, toType);
+        this.val = val;
     }
-    public static IRInst createCmpInst(IRInstIcmp.IcmpOp op, IRVal lhs, IRVal rhs, IRBasicType type){
-        if(type== IRBasicType.INT){
-            return new IRInstIcmp(op, lhs, rhs);
-        } else if(type== IRBasicType.FLOAT){
-            return new IRInstFcmp(opMap.get(op), lhs, rhs);
-        } else {
-            throw new RuntimeException("Unknown type");
+
+    @Override
+    public String toString() {
+        return String.format("%s = bitcast %s %s to %s", name, val.getType(), val.asValue(), getType());
+    }
+
+    @Override
+    public boolean replace(IRVal inst, IRVal newInst) {
+        if (val == inst) {
+            val = newInst;
+            return true;
         }
+        return false;
+    }
+
+    @Override
+    public String asValue() {
+        return name;
     }
 }

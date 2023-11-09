@@ -2,7 +2,7 @@ package icu.merky.jrabche.llvmir.values;
 
 import icu.merky.jrabche.exceptions.NotImplementedException;
 import icu.merky.jrabche.helper.Helper;
-import icu.merky.jrabche.helper.InitList;
+import icu.merky.jrabche.helper.ConstInitList;
 import icu.merky.jrabche.llvmir.types.ArrayType;
 import icu.merky.jrabche.llvmir.types.IRBasicType;
 import icu.merky.jrabche.llvmir.types.IRType;
@@ -46,65 +46,65 @@ public class IRValConstArray extends IRValConst {
             childVals.add(null);
         }
     }
+    public IRValConstArray(ArrayType ty, List<ValType> valTypes, List<IRValConst> childVals, List<IRValConstArray> childArrays, List<Integer> shapes) {
+        super(ty);
+        this.valTypes = valTypes;
+        this.childVals = childVals;
+        this.childArrays = childArrays;
+        this.shapes = shapes;
+    }
+    public IRValConstArray(IRValConstArray another) {
+        super(another.getType());
+        this.shapes = another.getShapes();
+        this.valTypes = another.getValTypes();
+        this.childVals = another.getChildVals();
+        this.childArrays = another.getChildArrays();
+    }
 
-    public static IRValConstArray FromInitList(InitList il, ArrayType arrayType) {
+    public static IRValConstArray FromInitList(ConstInitList il, ArrayType arrayType) {
         var arr = new IRValConstArray(arrayType);
         var gen = new ConstArrayGenerator(il,arr);
         gen.gen();
         arr = gen.arr;
+        arr.reduceZero();
         return arr;
     }
 
-    public IRVal get(List<Integer> target) {
+    public boolean reduceZero() {
+        if (this.valTypes.size() == 0) {
+            return true;
+        }
+        boolean allZero = true;
+        for (int i = 0; i < valTypes.size(); i++) {
+            ValType t = valTypes.get(i);
+            if(t==ValType.ZERO) continue;
+            if(t==ValType.VAL) {
+                if(childVals.get(i).isZero()) {
+                    valTypes.set(i,ValType.ZERO);
+                } else {
+                    allZero=false;
+                }
+            } else { // t==ValType.ARR
+                if(childArrays.get(i).reduceZero()) {
+                    valTypes.set(i,ValType.ZERO);
+                } else {
+                    allZero=false;
+                }
+            }
+        }
+        return allZero;
+    }
+    public IRValConst get(List<Integer> target) {
         if(valTypes.size()==0) {
             return null;
         }
         var t = valTypes.get(target.get(0));
         if (t == ValType.ZERO) {
-            return null;
+            return IRValConst.Zero(getArrayType().getAtomType());
         } else if (t == ValType.VAL) {
             return childVals.get(target.get(0));
         } else {
             return childArrays.get(target.get(0)).get(target.subList(1, target.size()));
-        }
-    }
-
-    /**
-     * /// According to shape, add N to cur.
-     * /// \param shape [2][3]
-     * /// \param cur [1][2]
-     * /// \param N
-     * /// \param startsAt
-     * /// \param reset
-     * void ArrayPosPlusN(
-     * const std::deque<size_t>& shape,
-     * std::deque<size_t>&       cur,
-     * size_t                    N,
-     * int                       startsAt = -1,
-     * bool                      reset    = true
-     * )
-     * {
-     * if (startsAt == -1) startsAt = shape.size() - 1;
-     * for (int i = startsAt; i >= 0; --i) {   // ATTENTION!!!!!!!!
-     * cur[i] += N;
-     * if (cur[i] < shape[i]) { break; }
-     * N = cur[i] / shape[i];
-     * cur[i] %= shape[i];
-     * }
-     * if (reset) {
-     * for (int i = startsAt + 1; i < shape.size(); ++i) { cur[i] = 0; }
-     * }
-     * }
-     */
-    static void ArrayPosPlusN(List<Integer> shape, List<Integer> cur, int N, int startsAt) {
-        if (startsAt == -1) startsAt = shape.size() - 1;
-        for (int i = startsAt; i >= 0; --i) {
-            cur.set(i, cur.get(i) + N);
-            if (cur.get(i) < shape.get(i)) {
-                break;
-            }
-            N = cur.get(i) / shape.get(i);
-            cur.set(i, cur.get(i) % shape.get(i));
         }
     }
 
@@ -154,7 +154,31 @@ public class IRValConstArray extends IRValConst {
     @Override
     public String asValue() {
         // TODO
-        throw new NotImplementedException();
+        StringBuilder sb = new StringBuilder();
+        // sb.append(this.type.toString()).append(" ");
+        if(this.valTypes.stream().allMatch(x->x==ValType.ZERO)) {
+            sb.append("zeroinitializer");
+        } else {
+            sb.append("[");
+            for (int i = 0; i < valTypes.size(); i++) {
+                ValType t = valTypes.get(i);
+                IRType elemType = ((ArrayType) this.type).getElementType();
+                sb.append(elemType.toString()).append(" ");
+                if (t == ValType.ZERO) {
+                    if(elemType.isFloat()) sb.append("0x");
+                    sb.append(elemType.isScalar()?"0":"zeroinitializer");
+                } else if (t == ValType.VAL) {
+                    sb.append(childVals.get(i).asValue());
+                } else {
+                    sb.append(childArrays.get(i).asValue());
+                }
+                if (i != valTypes.size() - 1) {
+                    sb.append(", ");
+                }
+            }
+            sb.append("]");
+        }
+        return sb.toString();
     }
 
     public enum ValType {ZERO, ARR, VAL}
@@ -162,10 +186,10 @@ public class IRValConstArray extends IRValConst {
     static class ConstArrayGenerator {
         public IRValConstArray arr;
         List<Integer> cur, shape;
-        InitList iList;
+        ConstInitList iList;
         IRBasicType basicType;
 
-        public ConstArrayGenerator(InitList iList,IRValConstArray arr) {
+        public ConstArrayGenerator(ConstInitList iList, IRValConstArray arr) {
             this.arr = arr;
             this.cur = new ArrayList<>();
             for (int i = 0; i < arr.shapes.size(); i++) {
@@ -180,20 +204,20 @@ public class IRValConstArray extends IRValConst {
             gen(iList, cur, 0);
         }
 
-        private void gen(InitList val, List<Integer> pos, int d) {
+        private void gen(ConstInitList val, List<Integer> pos, int d) {
             int pVal = 0, pArr = 0;
             for (int i = 0; i < val.witch.size(); i++) {
-                if (val.witch.get(i) == InitList.ILType.CV) {
+                if (val.witch.get(i) == ConstInitList.ILType.CV) {
                     var cVal = val.constVals.get(pVal++);
                     cVal = Helper.DoCompileTimeConversion(basicType, cVal);
                     arr.set(pos, cVal);
-                    ArrayPosPlusN(shape, pos, 1, -1);
+                    Helper.ArrayPosPlusN(shape, pos, 1, -1);
                 } else {
                     int before = pos.get(d);
                     var il = val.initLists.get(pArr++);
                     gen(il, pos, d + 1);
                     if (before == pos.get(d)) {
-                        ArrayPosPlusN(shape, pos, 1, d);
+                        Helper.ArrayPosPlusN(shape, pos, 1, d);
                     }
                 }
             }

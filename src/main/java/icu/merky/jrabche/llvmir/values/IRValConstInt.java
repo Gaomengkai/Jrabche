@@ -10,6 +10,10 @@ public class IRValConstInt extends IRValConst implements Wordzation {
         this.value = value;
     }
 
+    public static IRValConstInt fromInt(int i) {
+        return new IRValConstInt(i);
+    }
+
     public int getValue() {
         return value;
     }

@@ -40,6 +40,8 @@ import icu.merky.jrabche.llvmir.types.IRBasicType;
 import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.values.*;
 
+import java.util.List;
+
 public class Helper {
     public static int GetIntNumFromCVal(IRValConst lastVal) {
         if (lastVal instanceof IRValConstInt intVal) {
@@ -176,6 +178,18 @@ public class Helper {
         }
     }
 
+    public static IRValConstBool DoCompileTimeBoolConversion(IRValConst val) {
+        if (val instanceof IRValConstBool) {
+            return (IRValConstBool) val;
+        } else if (val instanceof IRValConstInt) {
+            return new IRValConstBool(((IRValConstInt) val).getValue());
+        } else if (val instanceof IRValConstFloat) {
+            return new IRValConstBool((int) ((IRValConstFloat) val).getValue());
+        } else {
+            throw new RuntimeException("Not a bool");
+        }
+    }
+
     public static void DoRuntimeConversion(VisitorContext C, IRBasicType atomType, IRVal val) {
         if (val instanceof IRValConst) {
             C.lastVal = DoCompileTimeConversion(atomType, val);
@@ -216,11 +230,13 @@ public class Helper {
         }
         var resolvedType = ResolveType(lhs.getType(), rhs.getType());
         DoRuntimeConversion(C, resolvedType, lhs);
+        lhs = C.lastVal;
         DoRuntimeConversion(C, resolvedType, rhs);
+        rhs = C.lastVal;
         if (resolvedType.equals(IRBasicType.INT)) {
-            C.lastVal = C.addInst(new IRInstMath(op, C.lastVal, rhs));
+            C.lastVal = C.addInst(new IRInstMath(op, lhs, rhs));
         } else if (resolvedType.equals(IRBasicType.FLOAT)) {
-            C.lastVal = C.addInst(new IRInstMath(op, C.lastVal, rhs));
+            C.lastVal = C.addInst(new IRInstMath(op, rhs, rhs));
         } else {
             throw new RuntimeException("MathOP error");
         }
@@ -236,12 +252,73 @@ public class Helper {
         lhs = C.lastVal;
         DoRuntimeConversion(C, resolvedType, rhs);
         rhs = C.lastVal;
-        C.addAndUpdate(IRInstCmpFactory.createCmpInst(op,lhs,rhs,resolvedType));
+        C.addAndUpdate(IRInstCmpFactory.createCmpInst(op, lhs, rhs, resolvedType));
     }
+
+    public static void DoRuntimeBoolConversion(VisitorContext C, IRVal val) {
+        if (val instanceof IRValConst) {
+            C.lastVal = DoCompileTimeBoolConversion((IRValConst) val);
+        } else {
+            if (val.getType().isI1()) {
+                C.lastVal = val;
+                return;
+            }
+            DoRuntimeConversion(C, IRBasicType.INT, val);
+            C.lastVal = C.addInst(new IRInstIcmp(IRInstIcmp.IcmpOp.NE, C.lastVal, IRValConst.Zero(IRBasicType.INT)));
+        }
+    }
+
     public static IRBasicType ResolveType(IRType t1, IRType t2) {
-        if(t1.isFloat()||t2.isFloat()){
+        if (t1.isFloat() || t2.isFloat()) {
             return IRBasicType.FLOAT;
         }
         return IRBasicType.INT;
+    }
+
+    /**
+     * /// According to shape, add N to cur.
+     * /// \param shape [2][3]
+     * /// \param cur [1][2]
+     * /// \param N
+     * /// \param startsAt
+     * /// \param reset
+     * void ArrayPosPlusN(
+     * const std::deque<size_t>& shape,
+     * std::deque<size_t>&       cur,
+     * size_t                    N,
+     * int                       startsAt = -1,
+     * bool                      reset    = true
+     * )
+     * {
+     * if (startsAt == -1) startsAt = shape.size() - 1;
+     * for (int i = startsAt; i >= 0; --i) {   // ATTENTION!!!!!!!!
+     * cur[i] += N;
+     * if (cur[i] < shape[i]) { break; }
+     * N = cur[i] / shape[i];
+     * cur[i] %= shape[i];
+     * }
+     * if (reset) {
+     * for (int i = startsAt + 1; i < shape.size(); ++i) { cur[i] = 0; }
+     * }
+     * }
+     */
+    public static void ArrayPosPlusN(List<Integer> shape, List<Integer> cur, int N, int startsAt) {
+        if (startsAt == -1) startsAt = shape.size() - 1;
+        for (int i = startsAt; i >= 0; --i) {
+            cur.set(i, cur.get(i) + N);
+            if (cur.get(i) < shape.get(i)) {
+                break;
+            }
+            N = cur.get(i) / shape.get(i);
+            cur.set(i, cur.get(i) % shape.get(i));
+        }
+        // for (int i = startsAt + 1; i < shape.size(); ++i) { cur[i] = 0; }
+        for (int i = startsAt + 1; i < shape.size(); ++i) {
+            cur.set(i, 0);
+        }
+    }
+
+    public static void ArrayPosPlusN(List<Integer> shape, List<Integer> cur, int N) {
+        ArrayPosPlusN(shape, cur, N, -1);
     }
 }

@@ -1,5 +1,6 @@
 package icu.merky.jrabche.llvmir.types;
 
+import java.util.LinkedList;
 import java.util.List;
 
 public class ArrayType extends IRType {
@@ -52,6 +53,16 @@ public class ArrayType extends IRType {
             }
         }
         return atomType;
+    }
+
+    public List<Integer> getShape() {
+        if (elementType.isArray()) {
+            List<Integer> shape = ((ArrayType) elementType).getShape();
+            shape.add(0, size);
+            return shape;
+        } else {
+            return new LinkedList<>(List.of(size));
+        }
     }
 
     public int getSizeBytes() {

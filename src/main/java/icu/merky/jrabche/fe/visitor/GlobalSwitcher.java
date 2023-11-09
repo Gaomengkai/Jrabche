@@ -49,9 +49,8 @@ public class GlobalSwitcher {
         cur = v;
     }
 
-    public boolean ascend() {
+    public void ascend() {
         cur = stack.pop();
-        return cur;
     }
 
     public boolean get() {

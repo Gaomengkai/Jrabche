@@ -126,6 +126,16 @@ public class IRBasicBlockImpl implements IRBasicBlock {
     }
 
     @Override
+    public void chunkAfterTerminator() {
+        for (int i = 0;i<instList.size();i++) {
+            if (instList.get(i).isTerminatorInst()) {
+                instList.subList(i+1,instList.size()).clear();
+                return;
+            }
+        }
+    }
+
+    @Override
     public String toString() {
         StringBuilder sb =new StringBuilder();
         sb.append(name).append(":\n");

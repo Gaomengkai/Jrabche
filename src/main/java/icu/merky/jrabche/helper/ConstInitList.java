@@ -40,13 +40,13 @@ import icu.merky.jrabche.llvmir.values.IRValConst;
 import java.util.ArrayList;
 import java.util.List;
 
-public class InitList extends IRVal {
+public class ConstInitList extends IRVal {
     public IRBasicType containedType;
-    public List<InitList> initLists;
+    public List<ConstInitList> initLists;
     public List<IRValConst> constVals;
     public List<ILType> witch;
     public List<Integer> indices;
-    public InitList(IRBasicType atomType) {
+    public ConstInitList(IRBasicType atomType) {
         super(new InvalidType());
         containedType = atomType;
         witch = new ArrayList<>();
@@ -58,7 +58,7 @@ public class InitList extends IRVal {
         throw new NotImplementedException();
     }
 
-    public void addIL(InitList il) {
+    public void addIL(ConstInitList il) {
         if (initLists == null)
             initLists = new ArrayList<>();
         initLists.add(il);

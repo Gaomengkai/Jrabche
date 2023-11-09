@@ -55,7 +55,7 @@ public class IRInstAlloca extends IRInst {
 
     @Override
     public String toString() {
-        return getName() + " = alloca " + type.toString();
+        return getName() + " = alloca " + ((PointerType)type).getElementType();
     }
 
     @Override

@@ -9,6 +9,17 @@ public abstract class IRValConst extends IRVal {
         setConst(true);
     }
 
+    public boolean isZero() {
+        if (this instanceof IRValConstInt) {
+            return ((IRValConstInt) this).getValue() == 0;
+        } else if(this instanceof IRValConstFloat) {
+            return ((IRValConstFloat) this).getValue() == 0;
+        } else if(this instanceof IRValConstBool) {
+            return ((IRValConstBool) this).getValue() == 0;
+        }
+        return false;
+    }
+
     public  static IRValConstInt ZeroInt() {
         return new IRValConstInt(0);
     }

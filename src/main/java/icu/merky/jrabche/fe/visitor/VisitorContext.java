@@ -37,27 +37,48 @@ import icu.merky.jrabche.llvmir.inst.IRInstAlloca;
 import icu.merky.jrabche.llvmir.types.*;
 import icu.merky.jrabche.llvmir.values.IRVal;
 import icu.merky.jrabche.llvmir.values.IRValConst;
+import icu.merky.jrabche.llvmir.values.IRValGlobal;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static icu.merky.jrabche.llvmir.types.PointerType.MakePointer;
+
 public class VisitorContext {
     public BType bType = BType.INVALID;
     public GlobalSwitcher isConst = new GlobalSwitcher("isConst");
     public GlobalSwitcher needLoad = new GlobalSwitcher("needLoad");
     // symbol table global
-    public Map<String, FunctionType> globalFunctionSymbolTable = new HashMap<>();
+    public Map<String, FunctionType> gFuncSymTbl = new HashMap<>();
     // local symbol table
     public LayerCtrl lc = new LayerCtrl();
     public IRBuilder builder;
     public IRVal lastVal;
     public IRType lastType;
     public FPType lastFPType;
-    public BBController bbController = new BBController();
+    public BBController bbc = new BBController();
     boolean inAtarashiiFunction = false;
+    public boolean inCond = false;
     Renamer renamer = new Renamer();
+    class IC {
+        /*
+            // only for local array def.
+    std::vector<size_t>        curShape;
+    std::vector<size_t>        curArrayPos;
+    size_t                     curArrayDim;
+    string                     curArrId;
+    shared_ptr<IRCtrl::IRType> curArrType;
+    // end  for local array def
+         */
+        public List<Integer> curShape = new ArrayList<>();
+        public List<Integer> curArrayPos = new ArrayList<>();
+        public int curArrayDim;
+        public IRVal curArr;
+        public IRType curArrType;
+    }
+    public IC ic = new IC();
 
     public VisitorContext(IRBuilder builder) {
         this.builder = builder;
@@ -66,56 +87,55 @@ public class VisitorContext {
 
     private void initBuiltinFunctions() {
         // void @llvm.memset.p0.i32(i32* %v1, i8 0, i32 12, i1 false)
-        var memsetType = new FunctionType(new VoidType(), List.of(new IntType(32), new IntType(8), new IntType(32), new IntType(1)));
-        globalFunctionSymbolTable.put("llvm.memset.p0.i32", memsetType);
+        var memsetType = new FunctionType(new VoidType(), List.of(MakePointer(new IntType(32)), new IntType(8), new IntType(32), new IntType(1)));
+        gFuncSymTbl.put("llvm.memset.p0.i32", memsetType);
         // i32 @getint()
         var getintType = new FunctionType(new IntType(32), List.of());
-        globalFunctionSymbolTable.put("getint", getintType);
+        gFuncSymTbl.put("getint", getintType);
         // i32 @getfloat()
         var getfloatType = new FunctionType(new FloatType(), List.of());
-        globalFunctionSymbolTable.put("getfloat", getfloatType);
+        gFuncSymTbl.put("getfloat", getfloatType);
         // void @putint(i32)
         var putintType = new FunctionType(new VoidType(), List.of(new IntType(32)));
-        globalFunctionSymbolTable.put("putint", putintType);
+        gFuncSymTbl.put("putint", putintType);
         // void @putfloat(float)
         var putfloatType = new FunctionType(new VoidType(), List.of(new FloatType()));
-        globalFunctionSymbolTable.put("putfloat", putfloatType);
+        gFuncSymTbl.put("putfloat", putfloatType);
         // i32 @getarray(i32*)
         var getarrayType = new FunctionType(new IntType(32), List.of(new PointerType(new IntType(32))));
-        globalFunctionSymbolTable.put("getarray", getarrayType);
+        gFuncSymTbl.put("getarray", getarrayType);
         // i32 @getfarray(float*)
         var getfarrayType = new FunctionType(new FloatType(), List.of(new PointerType(new FloatType())));
-        globalFunctionSymbolTable.put("getfarray", getfarrayType);
+        gFuncSymTbl.put("getfarray", getfarrayType);
         // i32 @getch()
         var getchType = new FunctionType(new IntType(32), List.of());
-        globalFunctionSymbolTable.put("getch", getchType);
+        gFuncSymTbl.put("getch", getchType);
         // void @putch(i32)
         var putchType = new FunctionType(new VoidType(), List.of(new IntType(32)));
-        globalFunctionSymbolTable.put("putch", putchType);
+        gFuncSymTbl.put("putch", putchType);
         // void @putarray(i32, i32*)
         var putarrayType = new FunctionType(new VoidType(), List.of(new IntType(32), new PointerType(new IntType(32))));
-        globalFunctionSymbolTable.put("putarray", putarrayType);
+        gFuncSymTbl.put("putarray", putarrayType);
         // void @putfarray(i32, float*)
         var putfarrayType = new FunctionType(new VoidType(), List.of(new IntType(32), new PointerType(new FloatType())));
-        globalFunctionSymbolTable.put("putfarray", putfarrayType);
+        gFuncSymTbl.put("putfarray", putfarrayType);
         // void @_sysy_starttime(i32)
         var _sysy_starttimeType = new FunctionType(new VoidType(), List.of(new IntType(32)));
-        globalFunctionSymbolTable.put("_sysy_starttime", _sysy_starttimeType);
+        gFuncSymTbl.put("_sysy_starttime", _sysy_starttimeType);
         // void @_sysy_stoptime(i32)
         var _sysy_stoptimeType = new FunctionType(new VoidType(), List.of(new IntType(32)));
-        globalFunctionSymbolTable.put("_sysy_stoptime", _sysy_stoptimeType);
+        gFuncSymTbl.put("_sysy_stoptime", _sysy_stoptimeType);
+
+        gFuncSymTbl.forEach(builder::addFuncDeclaration);
     }
 
-    public void push(String name, IRVal val) {
-        lc.push(name, val);
-    }
 
     public IRVal query(String name) {
         return lc.query(name);
     }
 
     public FunctionType queryFunctionType(String name) {
-        return globalFunctionSymbolTable.get(name);
+        return gFuncSymTbl.get(name);
     }
 
     public IRInst addInst(IRInst inst) {
@@ -125,6 +145,7 @@ public class VisitorContext {
 
     /**
      * <h3>Attention: <code>C.lastVal</code> modified.</h3>
+     *
      * @param inst instruction to be added
      */
     public void addAndUpdate(IRInst inst) {
@@ -142,10 +163,31 @@ public class VisitorContext {
      * @param initVal initial value of the variable
      */
     public void pushConst(String name, IRValConst initVal) {
+        IRVal val = initVal;
         // a const should be pushed to global symbol table
         var renamed = lc.inGlobal() ? name : renamer.getNextLocalConstName(name);
-        lc.push(renamed, initVal);
-        builder.addGlobal(renamed, initVal);
+        val = new IRValGlobal(initVal); // const must be in global.
+        val.setConst(true);
+        val.setName("@" + renamed);
+        lc.push(name, val);
+        builder.addGlobal(renamed, val);
+    }
+
+    public String getNextRepeatName(String name) {
+        return renamer.getNextLocalRepeatName(name);
+    }
+
+    public void pushVar(String name, IRVal val) {
+        if (lc.inGlobal()) {
+            val = new IRValGlobal(val);
+            val.setName("@" + name);
+            builder.addGlobal(name, val);
+        }
+        lc.push(name, val);
+    }
+    public void pushConstVar(String name, IRVal val) {
+        val.setConst(true);
+        pushVar(name, val);
     }
 
     static class Layer {
@@ -199,7 +241,7 @@ public class VisitorContext {
         }
 
         /**
-         * Only query local
+         * Only query local(in-func)
          *
          * @param name name of the variable
          * @return null if not found
@@ -213,6 +255,12 @@ public class VisitorContext {
                 }
             }
             return null;
+        }
+
+        public IRVal queryGlobal(String name) {
+            // only global
+            var layer = layers.get(0);
+            return layer.valSymbolTable.getOrDefault(name, null);
         }
     }
 }

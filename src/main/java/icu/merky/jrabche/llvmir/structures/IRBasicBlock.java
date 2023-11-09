@@ -102,4 +102,6 @@ public interface IRBasicBlock {
      * @return whether the basic block is a terminator
      */
     boolean checkTerminator();
+
+    void chunkAfterTerminator();
 }

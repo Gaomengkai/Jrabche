@@ -37,4 +37,8 @@ public class Renamer {
     public String getNextLocalConstName(String originalName) {
         return "const." + originalName + "." + constCnt++;
     }
+
+    public String getNextLocalRepeatName(String originalName) {
+        return "v."+originalName+"."+constCnt++;
+    }
 }

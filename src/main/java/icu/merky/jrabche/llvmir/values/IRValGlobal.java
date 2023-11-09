@@ -29,35 +29,31 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.llvmir.inst;
+package icu.merky.jrabche.llvmir.values;
 
-import icu.merky.jrabche.llvmir.types.IRBasicType;
-import icu.merky.jrabche.llvmir.values.IRVal;
+import static icu.merky.jrabche.llvmir.types.PointerType.MakePointer;
 
-import java.util.HashMap;
-import java.util.Map;
-
-public class IRInstCmpFactory{
-    static private final Map<IRInstIcmp.IcmpOp, IRInstFcmp.FcmpOp> opMap = new HashMap<>();
-    static {
-        opMap.put(IRInstIcmp.IcmpOp.EQ, IRInstFcmp.FcmpOp.OEQ);
-        opMap.put(IRInstIcmp.IcmpOp.NE, IRInstFcmp.FcmpOp.UNE);
-        opMap.put(IRInstIcmp.IcmpOp.SGT, IRInstFcmp.FcmpOp.OGT);
-        opMap.put(IRInstIcmp.IcmpOp.SGE, IRInstFcmp.FcmpOp.OGE);
-        opMap.put(IRInstIcmp.IcmpOp.SLT, IRInstFcmp.FcmpOp.OLT);
-        opMap.put(IRInstIcmp.IcmpOp.SLE, IRInstFcmp.FcmpOp.OLE);
-        opMap.put(IRInstIcmp.IcmpOp.UGT, null);
-        opMap.put(IRInstIcmp.IcmpOp.UGE, null);
-        opMap.put(IRInstIcmp.IcmpOp.ULT, null);
-        opMap.put(IRInstIcmp.IcmpOp.ULE, null);
+public class IRValGlobal extends IRVal{
+    IRVal ptr;
+    public IRValGlobal(IRVal v) {
+        super(MakePointer(v.getType()));
+        ptr = v;
     }
-    public static IRInst createCmpInst(IRInstIcmp.IcmpOp op, IRVal lhs, IRVal rhs, IRBasicType type){
-        if(type== IRBasicType.INT){
-            return new IRInstIcmp(op, lhs, rhs);
-        } else if(type== IRBasicType.FLOAT){
-            return new IRInstFcmp(opMap.get(op), lhs, rhs);
-        } else {
-            throw new RuntimeException("Unknown type");
-        }
+    public IRVal getElement() {
+        return ptr;
     }
+    @Override
+    public String asValue() {
+        return getName();
+    }
+
+    public IRVal getValue() {
+        return ptr;
+    }
+
+    @Override
+    public String toString() {
+        return ptr.toString();
+    }
+
 }

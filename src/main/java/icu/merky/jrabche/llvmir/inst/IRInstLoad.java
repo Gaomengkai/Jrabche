@@ -31,16 +31,17 @@
 
 package icu.merky.jrabche.llvmir.inst;
 
+import icu.merky.jrabche.llvmir.types.PointerType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
-import static icu.merky.jrabche.llvmir.types.PointerType.dePointer;
+import static icu.merky.jrabche.llvmir.types.PointerType.DePointer;
 
 public class IRInstLoad extends IRInst {
     //     %v21 = load i32, i32* %v20
     private IRVal ptr;
 
     public IRInstLoad(IRVal ptr) {
-        super(null, InstID.LoadInst, dePointer(ptr.getType()));
+        super(null, InstID.LoadInst, PointerType.DePointer(ptr.getType()));
         this.ptr = ptr;
     }
 

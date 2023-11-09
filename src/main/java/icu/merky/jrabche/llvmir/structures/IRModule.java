@@ -31,5 +31,21 @@
 
 package icu.merky.jrabche.llvmir.structures;
 
+import icu.merky.jrabche.llvmir.types.FunctionType;
+import icu.merky.jrabche.llvmir.values.IRVal;
+
+import java.util.Map;
+
 public interface IRModule {
+    Map<String, FunctionType> getFunctionDeclarations();
+
+    void setFunctionDeclarations(Map<String, FunctionType> functionDeclarations);
+
+    Map<String, IRVal> getGlobals();
+
+    void setGlobals(Map<String, IRVal> globals);
+
+    Map<String, IRFunction> getFunctions();
+
+    void setFunctions(Map<String, IRFunction> functions);
 }

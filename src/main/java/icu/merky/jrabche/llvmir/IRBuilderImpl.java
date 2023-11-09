@@ -33,25 +33,41 @@ package icu.merky.jrabche.llvmir;
 
 import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
 import icu.merky.jrabche.llvmir.structures.IRFunction;
-import icu.merky.jrabche.llvmir.values.IRValConst;
+import icu.merky.jrabche.llvmir.structures.IRModule;
+import icu.merky.jrabche.llvmir.structures.impl.IRModuleImpl;
+import icu.merky.jrabche.llvmir.types.FunctionType;
+import icu.merky.jrabche.llvmir.values.IRVal;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class IRBuilderImpl implements IRBuilder {
-    Map<String,IRFunction> functions=new HashMap<>();
+
+
+    Map<String, IRVal> globals = new HashMap<>();
+    Map<String, IRFunction> functions = new HashMap<>();
+    Map<String, FunctionType> functionDeclarations=new HashMap<>();
     IRFunction curFunc;
 
-
     @Override
-    public void addFunction(IRFunction function) {
-        functions.put(function.getName(),function);
-        curFunc=function;
+    public Map<String, FunctionType> getFunctionDeclarations() {
+        return functionDeclarations;
     }
 
     @Override
-    public void addGlobal(String name, IRValConst value) {
+    public void addFuncDeclaration(String name, FunctionType type) {
+        functionDeclarations.put(name, type);
+    }
 
+    @Override
+    public void addFunction(IRFunction function) {
+        functions.put(function.getName(), function);
+        curFunc = function;
+    }
+
+    @Override
+    public void addGlobal(String name, IRVal value) {
+        globals.put(name, value);
     }
 
     @Override
@@ -62,5 +78,24 @@ public class IRBuilderImpl implements IRBuilder {
     @Override
     public IRBasicBlock curBB() {
         return curFunc.curBB();
+    }
+
+    @Override
+    public IRModule getModule() {
+        IRModule module = new IRModuleImpl();
+        module.setFunctions(functions);
+        module.setGlobals(globals);
+        module.setFunctionDeclarations(functionDeclarations);
+        return module;
+    }
+
+    @Override
+    public Map<String, IRVal> getGlobals() {
+        return globals;
+    }
+
+    @Override
+    public Map<String, IRFunction> getFunctions() {
+        return functions;
     }
 }

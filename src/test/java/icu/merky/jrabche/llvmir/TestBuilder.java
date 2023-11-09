@@ -31,29 +31,5 @@
 
 package icu.merky.jrabche.llvmir;
 
-import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
-import icu.merky.jrabche.llvmir.structures.IRFunction;
-import icu.merky.jrabche.llvmir.values.IRValConst;
-
-public class TestBuilder implements IRBuilder{
-
-    @Override
-    public void addFunction(IRFunction function) {
-
-    }
-
-    @Override
-    public void addGlobal(String name, IRValConst value) {
-
-    }
-
-    @Override
-    public IRFunction curFunc() {
-        return null;
-    }
-
-    @Override
-    public IRBasicBlock curBB() {
-        return null;
-    }
+public class TestBuilder extends IRBuilderImpl {
 }

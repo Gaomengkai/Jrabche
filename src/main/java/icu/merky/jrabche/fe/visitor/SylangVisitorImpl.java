@@ -32,10 +32,11 @@
 package icu.merky.jrabche.fe.visitor;
 
 import icu.merky.jrabche.exceptions.CompileException;
+import icu.merky.jrabche.exceptions.NotImplementedException;
 import icu.merky.jrabche.fe.parser.SylangParser;
 import icu.merky.jrabche.fe.parser.SylangVisitor;
+import icu.merky.jrabche.helper.ConstInitList;
 import icu.merky.jrabche.helper.Helper;
-import icu.merky.jrabche.helper.InitList;
 import icu.merky.jrabche.llvmir.IRBuilder;
 import icu.merky.jrabche.llvmir.inst.*;
 import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
@@ -157,6 +158,9 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         // constDef: Ident (Lbracket exp Rbracket)* Assign initVal;
         var atomType = C.bType.toBasicType();
         var name = ctx.Ident().getText();
+        if (C.query(name) != null) {
+            throw new CompileException("redefinition of variable `" + name + "`", ctx.Ident());
+        }
         ctx.initVal().accept(this);
         var initVal = C.lastVal;
 
@@ -172,7 +176,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         } else {
             // array
             ArrayType arrayType = ArrayType.FromShape(atomType, shape);
-            InitList il = (InitList) initVal;
+            ConstInitList il = (ConstInitList) initVal;
             IRValConstArray carr = IRValConstArray.FromInitList(il, arrayType);
             C.pushConst(name, carr);
         }
@@ -208,31 +212,36 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         // varDef: Ident (Lbracket exp Rbracket)* (Assign initVal)?;
         IRBasicType atomType = C.bType.toBasicType();
         String name = ctx.Ident().getText();
-        if(C.lc.queryLocal(name) != null) {
-            throw new CompileException("redefinition of variable `" + name+"`", ctx.Ident());
-        }
         List<Integer> shape = getShapeFromConstExp(ctx.exp());
         // global, must be a const.
-        if (C.lc.inGlobal()) globalVarDef(ctx, atomType, name, shape);
+        if (C.lc.inGlobal())
+            globalVarDef(ctx, atomType, name, shape);
             // local var, may not be all const.
         else {
+            String renamed = name;
+            if (C.lc.cur.valSymbolTable.get(name) != null) {
+                throw new CompileException("redefinition of variable `" + name + "`", ctx.Ident());
+            }
+            if (C.query(name) != null) {
+                renamed = C.getNextRepeatName(name);
+            }
             if (shape.isEmpty()) {
                 // local var, scalar
-                var alloca = C.addAlloca(new IRInstAlloca(name, atomType.toIRType()));
+                var alloca = C.addAlloca(new IRInstAlloca(renamed, atomType.toIRType()));
                 if (ctx.initVal() != null) {
                     // local var, scalar with init
                     try (AutoDive ignored = new AutoDive(C.needLoad, true)) {
                         ctx.initVal().accept(this);
                         DoRuntimeConversion(C, atomType, C.lastVal);
                         C.addAndUpdate(new IRInstStore(C.lastVal, alloca));
-                        C.push(name, alloca);
+                        C.pushVar(name, alloca);
                     } catch (Exception e) {
                         e.printStackTrace();
                         throw new RuntimeException(e);
                     }
                 } else {
                     // local var, scalar without init
-                    C.push(name, alloca);
+                    C.pushVar(name, alloca);
                 }
             } else {
                 // local var, array
@@ -241,22 +250,21 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
                 if (ctx.initVal() != null) {
                     // local var, array with init
                     try (AutoDive ignored = new AutoDive(C.needLoad, true)) {
+                        initCInitCtx(shape, arrayType, alloca);
+                        C.pushVar(name, alloca);
+                        CAddMemZero(C, arrayType.getSizeBytes(), alloca);
                         ctx.initVal().accept(this);
-                        InitList il = (InitList) C.lastVal;
-                        IRValConstArray carr = IRValConstArray.FromInitList(il, arrayType);
-                        // todo store array inner data to memory using gep and store
-                        C.lc.push(name, new IRVarArray(carr));
                     } catch (Exception e) {
                         e.printStackTrace();
                         throw new RuntimeException(e);
                     }
                 } else {
-                    // todo impl local array without init
                     // local var, array without init
-                    C.push(name, new IRVarArray(arrayType));
+                    C.pushVar(name, alloca);
                     // in sy def, local arr must init with 0.
                     // %v1 = bitcast [3 x i32]* %v0 to i32*
                     // call void @llvm.memset.p0.i32(i32* %v1, i8 0, i32 <size in bytes>, i1 false)
+                    CAddMemZero(C, arrayType.getSizeBytes(), alloca);
                 }
             }
         }
@@ -264,10 +272,42 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         return null;
     }
 
+    /**
+     * Initialize the context for array init.<br>
+     * Must call before visit non-const array init.
+     *
+     * @param shape     shape of array
+     * @param arrayType array type
+     * @param varArray  array var
+     */
+    private void initCInitCtx(List<Integer> shape, ArrayType arrayType, IRVal varArray) {
+        C.ic.curShape = new ArrayList<>(shape);
+        C.ic.curArrayPos.clear();
+        C.ic.curArrayPos.addAll(Collections.nCopies(C.ic.curShape.size(), 0));
+        C.ic.curArrayDim = 0;
+        C.ic.curArr = varArray;
+        C.ic.curArrType = arrayType;
+    }
+
+    private void CAddMemZero(VisitorContext C, int sizeInBytes, IRVal ptr) {
+        var zero8 = IRValConstInt.ZeroInt();
+        zero8.setType(new IntType(8));
+        C.addAndUpdate(new IRInstBitCast(ptr, new PointerType(new IntType())));
+        C.addAndUpdate(new IRInstCall("llvm.memset.p0.i32",
+                C.queryFunctionType("llvm.memset.p0.i32"),
+                List.of(
+                        C.lastVal,
+                        zero8,
+                        IRValConstInt.fromInt(sizeInBytes),
+                        IRValConstInt.ZeroBool()
+                )
+        ));
+    }
+
     @Finished
     private void globalVarDef(SylangParser.VarDefContext ctx, IRBasicType atomType, String name, List<Integer> shape) {
-        if(C.query(name) != null) {
-            throw new CompileException("redefinition of variable `" + name+"`", ctx.Ident());
+        if (C.query(name) != null) {
+            throw new CompileException("redefinition of variable `" + name + "`", ctx.Ident());
         }
         try (AutoDive ignored = new AutoDive(C.isConst, true)) {
             if (shape.isEmpty()) {
@@ -275,19 +315,20 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
                 if (ctx.initVal() != null) {
                     ctx.initVal().accept(this);
                     IRValConst converted = Helper.DoCompileTimeConversion(atomType, C.lastVal);
-                    C.lc.push(name, converted);
+                    C.pushVar(name, converted);
                 } else {
-                    C.lc.push(name, IRValConstInt.Zero(C.bType.toBasicType()));
+                    C.pushVar(name, IRValConstInt.Zero(C.bType.toBasicType()));
                 }
             } else {
                 // array
                 if (ctx.initVal() != null) {
                     ctx.initVal().accept(this);
-                    InitList il = (InitList) C.lastVal;
+                    ConstInitList il = (ConstInitList) C.lastVal;
                     IRValConstArray carr = IRValConstArray.FromInitList(il, ArrayType.FromShape(atomType, shape));
-                    C.lc.push(name, new IRVarArray(carr));
+                    C.pushVar(name, new IRValArray(carr));
                 } else {
-                    C.lc.push(name, new IRVarArray(ArrayType.FromShape(atomType, shape)));
+                    // C.pushVar(name, new IRVarArray(ArrayType.FromShape(atomType, shape)));
+                    C.pushVar(name, new IRValArray(ArrayType.FromShape(atomType,shape)));
                 }
             }
         } catch (Exception e) {
@@ -320,10 +361,10 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
     @Override
     public Void visitInitList(SylangParser.InitListContext ctx) {
         if (C.isConst.get()) {
-            var il = new InitList(C.bType.toBasicType());
+            var il = new ConstInitList(C.bType.toBasicType());
             for (SylangParser.InitValContext initValContext : ctx.initVal()) {
                 initValContext.accept(this);
-                if (C.lastVal instanceof InitList ilGot) {
+                if (C.lastVal instanceof ConstInitList ilGot) {
                     il.addIL(ilGot);
                 } else {
                     il.addCV((IRValConst) C.lastVal);
@@ -331,7 +372,34 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
             }
             C.lastVal = il;
         } else {
-// TODO
+            var innerType = C.bType;
+            for (SylangParser.InitValContext initValContext : ctx.initVal()) {
+                int thisDimBefore = C.ic.curArrayPos.get(C.ic.curArrayDim);
+
+                // $accept
+                C.ic.curArrayDim++;
+                initValContext.accept(this);
+                C.ic.curArrayDim--;
+                // $accept#
+
+                IRVal lastVal = C.lastVal;
+                if (lastVal.getType().isScalar()) {
+                    DoRuntimeConversion(C, innerType.toBasicType(), lastVal);
+                    List<IRVal> indices = new ArrayList<>();
+                    indices.add(IRValConstInt.ZeroInt());
+                    for (int i = 0; i < C.ic.curArrayPos.size(); i++) {
+                        indices.add(IRValConstInt.fromInt(C.ic.curArrayPos.get(i)));
+                    }
+                    C.addAndUpdate(new IRInstGEP(C.ic.curArr, indices));
+                    C.addAndUpdate(new IRInstStore(lastVal, C.lastVal));
+                    ArrayPosPlusN(C.ic.curShape, C.ic.curArrayPos, 1);
+                } else {
+                    // this branch is InitList.
+                    if (C.ic.curArrayPos.get(C.ic.curArrayDim) == thisDimBefore) {
+                        ArrayPosPlusN(C.ic.curShape, C.ic.curArrayPos, 1, C.ic.curArrayDim);
+                    }
+                }
+            }
         }
         return null;
     }
@@ -361,7 +429,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
                 ArrayList::addAll
         ));
         C.builder.addFunction(new IRFunctionImpl(name, funcType));
-        C.globalFunctionSymbolTable.put(name, funcType);
+        C.gFuncSymTbl.put(name, funcType);
         C.lc.dive();
         C.inAtarashiiFunction = true;
         // add fParams alloca and store.
@@ -498,6 +566,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
      * @return the visitor result
      */
     @Override
+    @Finished
     public Void visitAssign(SylangParser.AssignContext ctx) {
         // L
         C.needLoad.dive(false);
@@ -529,17 +598,16 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
     @Override
     @Finished
     public Void visitReturn(SylangParser.ReturnContext ctx) {
-        visitChildren(ctx);
         IRBasicType atomType = C.builder.curFunc().getFunctionType().getRetType().toBasicType();
         if (atomType == IRBasicType.VOID) {
-            C.addInst(new IRInstReturn(IRBasicType.VOID, null));
+            C.addAndUpdate(new IRInstReturn(IRBasicType.VOID, null));
         } else {
             if (ctx.exp() == null) throw new RuntimeException("returning void in non-void function");
             C.needLoad.dive(true);
             ctx.exp().accept(this);
             C.needLoad.ascend();
             DoRuntimeConversion(C, atomType, C.lastVal);
-            C.addInst(new IRInstReturn(atomType, C.lastVal));
+            C.addAndUpdate(new IRInstReturn(atomType, C.lastVal));
         }
         return null;
     }
@@ -567,37 +635,118 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
     @Override
     public Void visitLVal(SylangParser.LValContext ctx) {
         var name = ctx.Ident().getText();
-        var valAlloca = C.query(name);
+        var valQueried = C.query(name);
+        if (valQueried.getType().isScalar()) {
+            C.lastVal = valQueried;
+            return null;
+        }
+        C.needLoad.dive(true);
         List<IRVal> indices = ctx.exp().stream().collect(ArrayList<IRVal>::new, (list, exp) -> {
             exp.accept(this);
             list.add(C.lastVal);
         }, ArrayList::addAll);
-        if (!valAlloca.getType().isPointer()) {
+        C.needLoad.ascend();
+        if (!valQueried.getType().isPointer()) {
             throw new RuntimeException("getting lVal from a non-pointer");
         }
-        var valInnerType = ((IRInstAlloca) valAlloca).getAllocatedType();
-        if (!C.needLoad.get()) {
-            // on left of =
-            // this branch returns a pointer(either alloca or getelementptr)
-            // need not load, scalar
-            if (valInnerType.isInt() || valInnerType.isFloat()) {
-                C.lastVal = valAlloca;
+        var pointerType = (PointerType) valQueried.getType();
+        var valInnerType = pointerType.getElementType();
+
+        // if queried is global const scalar, need not load.
+        if (valQueried instanceof IRValGlobal gsc) {
+            if (gsc.isConst() && gsc.getValue().getType().isScalar()) {
+                C.lastVal = gsc.getValue();
+                return null;
             }
-            // need not load, array
+        }
+        // needn't load. excluding CALL args.
+        // because while accessing CALL args, the C.needLoad will be set to true.
+        if (!C.needLoad.get()) {
+            // lVal = xxx
+            // ^~~~
+            // this branch returns a pointer(either alloca or getelementptr)
+            // also may ba a IRValGlobalScalar.
+
+            // need not load, scalar
+            if (valInnerType.isScalar()) {
+                C.lastVal = valQueried;
+            }
+            // needn't load, array
             else {
-                // TODO
+                // use getelementptr to get the pointer to the array.
+                if (pointerType.getPointerLevel() == 2) {
+                    C.addAndUpdate(new IRInstLoad(valQueried));
+                    C.addAndUpdate(new IRInstGEP(C.lastVal, indices));
+                } else {
+                    indices.add(0, IRValConstInt.ZeroInt());
+                    C.addAndUpdate(new IRInstGEP(valQueried, indices));
+                }
             }
 
         }
         // need load
+        // xxx = lVal
+        //       ^~~~   <--this branch returns a value.
         else {
             // need load, scalar
-            if (valInnerType.isInt() || valInnerType.isFloat()) {
-                C.lastVal = C.addInst(new IRInstLoad(valAlloca));
+            if (valInnerType.isScalar()) {
+                C.lastVal = C.addInst(new IRInstLoad(valQueried));
+            }
+            // need load, directly use const.
+            else if (valQueried instanceof IRValGlobal garr
+                    && valQueried.isConst()
+                    && garr.getValue() instanceof IRValConstArray carr
+                    && indices.size() == carr.getShapes().size()
+                    && indices.stream().allMatch(x -> x instanceof IRValConstInt)
+            ) {
+                C.lastVal = carr.get(indices.stream().collect(ArrayList<Integer>::new, (list, irVal) -> {
+                    list.add(GetIntNumFromCVal((IRValConst) irVal));
+                }, ArrayList::addAll));
             }
             // need load, array
             else {
-                // TODO
+                // TODO test, optimize code
+                boolean justLoadTheValue = false;
+                int idxCnt = 0;
+                if (valInnerType instanceof PointerType pType) {
+                    if (pType.getElementType().isScalar()) {
+                        idxCnt = 1;
+                    } else {
+                        idxCnt = ((ArrayType) pType.getElementType()).getShape().size() + 1;
+                    }
+                } else {
+                    idxCnt = ((ArrayType) valInnerType).getShape().size();
+                }
+                justLoadTheValue = indices.size() == idxCnt;
+                if (justLoadTheValue) {
+                    // need load, array's element
+                    if (pointerType.getPointerLevel() == 2) {
+                        // fp copies. like %v = alloca [3 x i32]*, %v is [3 x i32]**
+                        C.addAndUpdate(new IRInstLoad(valQueried));
+                        C.addAndUpdate(new IRInstGEP(C.lastVal, indices));
+                    } else {
+                        indices.add(0, IRValConstInt.ZeroInt());
+                        C.addAndUpdate(new IRInstGEP(valQueried, indices));
+                    }
+                    C.addAndUpdate(new IRInstLoad(C.lastVal));
+                } else {
+                    // need load, array's pointer, only appears in CALL args.
+                    if (pointerType.getPointerLevel() == 2) {
+                        // need load, array's pointer, fp copies.
+                        // like %v = alloca [3 x i32]*, %v is [3 x i32]**
+                        C.addAndUpdate(new IRInstLoad(valQueried));
+                        if (!indices.isEmpty()) {
+                            indices.add(IRValConstInt.ZeroInt());
+                            C.addAndUpdate(new IRInstGEP(C.lastVal, indices));
+                        }
+                    } else {
+                        // need load, array's pointer, non-fp copies.
+                        // add 0 front and end.
+                        indices.add(0, IRValConstInt.ZeroInt());
+                        indices.add(IRValConstInt.ZeroInt());
+                        C.addAndUpdate(new IRInstGEP(valQueried, indices));
+                    }
+                }
             }
         }
         return null;
@@ -613,30 +762,52 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
      */
     @Override
     public Void visitCall(SylangParser.CallContext ctx) {
+        List<IRVal> args = new ArrayList<>();
+        C.needLoad.dive(true);
+        if (ctx.funcRParams() != null) {
+            ctx.funcRParams().funcRParam().forEach(a -> {
+                a.accept(this);
+                args.add(C.lastVal);
+            });
+        }
+        C.needLoad.ascend();
+        var funcName = ctx.Ident().getText();
+        var funcType = C.gFuncSymTbl.get(funcName);
+        if (funcType == null) {
+            throw new CompileException("function `" + funcName + "` not found", ctx.Ident());
+        }
+        C.addAndUpdate(new IRInstCall(funcName, funcType, args));
         return null;
     }
 
 
     /**
      * Visit a parse tree produced by {@link SylangParser#funcRParam}.
+     * <code>funcRParam: exp | stringConst;</code>
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
     @Override
+    @Finished
     public Void visitFuncRParam(SylangParser.FuncRParamContext ctx) {
+        ctx.exp().accept(this);
         return null;
     }
 
     /**
-     * Visit a parse tree produced by {@link SylangParser#funcRParams}.
+     * You shouldn't call this function.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
     @Override
+    @Finished
+    @Deprecated
     public Void visitFuncRParams(SylangParser.FuncRParamsContext ctx) {
-        return null;
+        // You shouldn't call this function.
+        // FuncRParams should be handled in visitCall.
+        throw new NotImplementedException();
     }
 
     /*
@@ -651,29 +822,33 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
      * @return the visitor result
      */
     @Override
+    @Finished
     public Void visitIfElse(SylangParser.IfElseContext ctx) {
         // prepare
-        IRBasicBlock trueBB,falseBB,afterBB;
+        C.needLoad.dive(true);
+        IRBasicBlock trueBB, falseBB, afterBB;
         int ifElseCount = BBController.ifCount.getAndIncrement();
-        trueBB=C.builder.curFunc().addBlock();
-        trueBB.setName("if.then."+ifElseCount);
-        afterBB=C.builder.curFunc().addBlock();
-        afterBB.setName("if.end."+ifElseCount);
-        if(ctx.Else()!=null) {
-            falseBB=C.builder.curFunc().addBlock();
-            falseBB.setName("if.else."+ifElseCount);
+        trueBB = C.builder.curFunc().addBlock();
+        trueBB.setName("if.then." + ifElseCount);
+        afterBB = C.builder.curFunc().addBlock();
+        afterBB.setName("if.end." + ifElseCount);
+        if (ctx.Else() != null) {
+            falseBB = C.builder.curFunc().addBlock();
+            falseBB.setName("if.else." + ifElseCount);
         } else {
-            falseBB=afterBB;
+            falseBB = afterBB;
         }
 
-        C.bbController.pushIf(trueBB,falseBB,afterBB,C.lc.getLayerIndex());
+        C.bbc.pushIf(trueBB, falseBB, afterBB, C.lc.getLayerIndex());
 
         // 1. add COND sen
+        C.inCond = true;
         ctx.cond().accept(this);
+        C.inCond = false;
         IRVal cond = C.lastVal;
 
         // 2. add BR
-        C.addInst(new IRInstBr(cond,trueBB,falseBB));
+        C.addInst(new IRInstBr(cond, trueBB, falseBB));
 
         // 3. move to true
         C.builder.curFunc().setCurrentBlock(trueBB);
@@ -685,15 +860,15 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         C.addInst(new IRInstBr(afterBB));
 
         // 6-8 if there is else
-        if(ctx.Else()!=null){
+        if (ctx.Else() != null) {
             // 6. move to FalseBB
             C.builder.curFunc().setCurrentBlock(falseBB);
-            if(ctx.stmt().size()==2) {
+            if (ctx.stmt().size() == 2) {
                 // 7. accept false
                 ctx.stmt(1).accept(this);
             }
 
-            //8. add BR
+            // 8. add BR
             C.addInst(new IRInstBr(afterBB));
         }
 
@@ -701,7 +876,8 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         C.builder.curFunc().setCurrentBlock(afterBB);
 
         // 10. status
-        C.bbController.pop();
+        C.bbc.pop();
+        C.needLoad.ascend();
         return null;
     }
 
@@ -713,7 +889,36 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
      * @return the visitor result
      */
     @Override
+    @Finished
     public Void visitWhile(SylangParser.WhileContext ctx) {
+        C.needLoad.dive(true);
+        IRBasicBlock condBB, bodyBB, afterBB;
+        int whileCount = BBController.whileCount.getAndIncrement();
+        condBB = C.builder.curFunc().addBlock();
+        condBB.setName("while.cond." + whileCount);
+        bodyBB = C.builder.curFunc().addBlock();
+        bodyBB.setName("while.body." + whileCount);
+        afterBB = C.builder.curFunc().addBlock();
+        afterBB.setName("while.end." + whileCount);
+
+        C.bbc.pushWhile(bodyBB, condBB, afterBB, C.lc.getLayerIndex());
+        C.addAndUpdate(new IRInstBr(condBB));
+
+        C.builder.curFunc().setCurrentBlock(condBB);
+        C.inCond = true;
+        ctx.cond().accept(this);
+        C.inCond = false;
+        IRVal cond = C.lastVal;
+        C.addAndUpdate(new IRInstBr(cond, bodyBB, afterBB));
+
+        C.builder.curFunc().setCurrentBlock(bodyBB);
+        ctx.stmt().accept(this);
+        C.addAndUpdate(new IRInstBr(condBB));
+
+        C.builder.curFunc().setCurrentBlock(afterBB);
+
+        C.bbc.pop();
+        C.needLoad.ascend();
         return null;
     }
 
@@ -725,7 +930,10 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
      * @return the visitor result
      */
     @Override
+    @Finished
     public Void visitBreak(SylangParser.BreakContext ctx) {
+        IRBasicBlock whileBreakBB = C.bbc.queryWhileBreakBB();
+        C.addInst(new IRInstBr(whileBreakBB));
         return null;
     }
 
@@ -737,7 +945,10 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
      * @return the visitor result
      */
     @Override
+    @Finished
     public Void visitContinue(SylangParser.ContinueContext ctx) {
+        IRBasicBlock whileCondBB = C.bbc.queryWhileCondBB();
+        C.addInst(new IRInstBr(whileCondBB));
         return null;
     }
 
@@ -819,6 +1030,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
      * @return the visitor result
      */
     @Override
+    @Finished
     public Void visitUnary_(SylangParser.Unary_Context ctx) {
         // add sub not
         enum Ops {
@@ -843,7 +1055,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
             }
             case SUB -> {
                 var zero = IRValConst.Zero(atomType);
-                DoRuntimeCalculation(C,zero,val,IRInstMath.MathOP.Sub);
+                DoRuntimeCalculation(C, zero, val, IRInstMath.MathOP.Sub);
             }
             case NOT -> {
                 var zero = IRValConst.Zero(atomType);
@@ -863,13 +1075,14 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
      * @return the visitor result
      */
     @Override
+    @Finished
     public Void visitRelExp_(SylangParser.RelExp_Context ctx) {
         // LT GT LEQ GEQ
         IRInstIcmp.IcmpOp op;
-        if(ctx.Leq()!=null) op= IRInstIcmp.IcmpOp.SLE;
-        else if(ctx.Lt()!=null) op = IRInstIcmp.IcmpOp.SLT;
-        else if(ctx.Gt()!=null) op= IRInstIcmp.IcmpOp.SGT;
-        else if(ctx.Geq()!=null) op = IRInstIcmp.IcmpOp.SGE;
+        if (ctx.Leq() != null) op = IRInstIcmp.IcmpOp.SLE;
+        else if (ctx.Lt() != null) op = IRInstIcmp.IcmpOp.SLT;
+        else if (ctx.Gt() != null) op = IRInstIcmp.IcmpOp.SGT;
+        else if (ctx.Geq() != null) op = IRInstIcmp.IcmpOp.SGE;
         else throw new RuntimeException("unknown icmp op");
 
         C.needLoad.dive(true);
@@ -886,11 +1099,13 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
     /**
      * Visit a parse tree produced by the {@code neq}
      * labeled alternative in {@link SylangParser#}.
-     *<code>	eqExp Neq relExp	# neq;</code>
+     * <code>	eqExp Neq relExp	# neq;</code>
+     *
      * @param ctx the parse tree
      * @return the visitor result
      */
     @Override
+    @Finished
     public Void visitNeq(SylangParser.NeqContext ctx) {
         IRInstIcmp.IcmpOp op = IRInstIcmp.IcmpOp.NE;
         C.needLoad.dive(true);
@@ -911,6 +1126,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
      * @return the visitor result
      */
     @Override
+    @Finished
     public Void visitEq(SylangParser.EqContext ctx) {
         IRInstIcmp.IcmpOp op = IRInstIcmp.IcmpOp.EQ;
         C.needLoad.dive(true);
@@ -936,6 +1152,27 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
      */
     @Override
     public Void visitAnd(SylangParser.AndContext ctx) {
+        C.needLoad.dive(true);
+        int andCount = BBController.andCount.getAndIncrement();
+        IRBasicBlock trueBB = C.builder.curFunc().addBlock();
+        trueBB.setName("and.next." + andCount);
+        C.bbc.pushAnd(trueBB);
+
+        ctx.lAndExp().accept(this);
+        DoRuntimeBoolConversion(C, C.lastVal);
+        IRVal left = C.lastVal;
+        if (!C.inCond) {
+            throw new NotImplementedException();
+        }
+        C.addInst(new IRInstBr(left, C.bbc.queryTrueBB(), C.bbc.queryFalseBB()));
+
+        C.builder.curFunc().setCurrentBlock(trueBB);
+        C.bbc.pop();
+
+        ctx.eqExp().accept(this);
+        DoRuntimeBoolConversion(C, C.lastVal);
+
+        C.needLoad.dive(false);
         return null;
     }
 
@@ -948,6 +1185,27 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
      */
     @Override
     public Void visitOr(SylangParser.OrContext ctx) {
+        C.needLoad.dive(true);
+        int orCount = BBController.orCount.getAndIncrement();
+        IRBasicBlock falseBB = C.builder.curFunc().addBlock();
+        falseBB.setName("or.next." + orCount);
+        C.bbc.pushOr(falseBB);
+
+        ctx.lOrExp().accept(this);
+        DoRuntimeBoolConversion(C, C.lastVal);
+        IRVal left = C.lastVal;
+        if (!C.inCond) {
+            throw new NotImplementedException();
+        }
+        C.addInst(new IRInstBr(left, C.bbc.queryTrueBB(), C.bbc.queryFalseBB()));
+
+        C.builder.curFunc().setCurrentBlock(falseBB);
+        C.bbc.pop();
+
+        ctx.lAndExp().accept(this);
+        DoRuntimeBoolConversion(C, C.lastVal);
+
+        C.needLoad.dive(false);
         return null;
     }
 
