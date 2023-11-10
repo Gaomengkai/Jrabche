@@ -33,8 +33,8 @@ package icu.merky.jrabche.fe.visitor;
 
 import org.junit.jupiter.api.Test;
 
-import static icu.merky.jrabche.fe.visitor.SylangVisitorImplTest.getVisitorContext;
 import static icu.merky.jrabche.fe.visitor.Helper.LLCCompileTest;
+import static icu.merky.jrabche.fe.visitor.SylangVisitorImplTest.getVisitorContext;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestCond {
@@ -65,6 +65,7 @@ public class TestCond {
 
         assertTrue(LLCCompileTest(funcString));
     }
+
     @Test
     void ComplexIfWhileOrAnd1() throws NoSuchFieldException, IllegalAccessException {
         String funcName = Thread.currentThread().getStackTrace()[1].getMethodName();

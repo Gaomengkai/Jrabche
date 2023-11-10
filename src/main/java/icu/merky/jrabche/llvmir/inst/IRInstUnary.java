@@ -35,24 +35,24 @@ import icu.merky.jrabche.llvmir.types.FloatType;
 import icu.merky.jrabche.llvmir.types.IntType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
-public class IRInstUnary  extends IRInst{
-    public enum UnaryOP {
-        Invalid, FpToSi, SiToFp, ZExt, SExt
-    }
+public class IRInstUnary extends IRInst {
     UnaryOP unaryOP;
     IRVal v1;
     public IRInstUnary(UnaryOP unaryOP, IRVal v1) {
-        super(null, InstID.ConvertInst, unaryOP==UnaryOP.SiToFp?new FloatType():new IntType());
-        this.unaryOP=unaryOP;
-        this.v1=v1;
+        super(null, InstID.ConvertInst, unaryOP == UnaryOP.SiToFp ? new FloatType() : new IntType());
+        this.unaryOP = unaryOP;
+        this.v1 = v1;
     }
+
     @Override
     public String toString() {
         // %Val = zext i1 %value to i32
         return switch (unaryOP) {
-            case FpToSi -> name + " = fptosi " + v1.getType().toString()+ " " + v1.asValue() + " to " + type.toString();
-            case SiToFp -> name + " = sitofp " + v1.getType().toString() + " " + v1.asValue() + " to " + type.toString();
-            case ZExt -> name + " = zext " + v1.getType().toString()+ " " + v1.asValue() + " to " + type.toString();
+            case FpToSi ->
+                    name + " = fptosi " + v1.getType().toString() + " " + v1.asValue() + " to " + type.toString();
+            case SiToFp ->
+                    name + " = sitofp " + v1.getType().toString() + " " + v1.asValue() + " to " + type.toString();
+            case ZExt -> name + " = zext " + v1.getType().toString() + " " + v1.asValue() + " to " + type.toString();
             case SExt -> name + " = sext " + v1.getType().toString() + " " + v1.asValue() + " to " + type.toString();
             default -> null;
         };
@@ -70,5 +70,9 @@ public class IRInstUnary  extends IRInst{
     @Override
     public String asValue() {
         return name;
+    }
+
+    public enum UnaryOP {
+        Invalid, FpToSi, SiToFp, ZExt, SExt
     }
 }

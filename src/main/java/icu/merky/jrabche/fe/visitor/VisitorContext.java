@@ -39,10 +39,7 @@ import icu.merky.jrabche.llvmir.values.IRVal;
 import icu.merky.jrabche.llvmir.values.IRValConst;
 import icu.merky.jrabche.llvmir.values.IRValGlobal;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static icu.merky.jrabche.llvmir.types.PointerType.MakePointer;
 
@@ -59,26 +56,11 @@ public class VisitorContext {
     public IRType lastType;
     public FPType lastFPType;
     public BBController bbc = new BBController();
-    boolean inAtarashiiFunction = false;
     public boolean inCond = false;
-    Renamer renamer = new Renamer();
-    class IC {
-        /*
-            // only for local array def.
-    std::vector<size_t>        curShape;
-    std::vector<size_t>        curArrayPos;
-    size_t                     curArrayDim;
-    string                     curArrId;
-    shared_ptr<IRCtrl::IRType> curArrType;
-    // end  for local array def
-         */
-        public List<Integer> curShape = new ArrayList<>();
-        public List<Integer> curArrayPos = new ArrayList<>();
-        public int curArrayDim;
-        public IRVal curArr;
-        public IRType curArrType;
-    }
     public IC ic = new IC();
+    boolean inAtarashiiFunction = false;
+    Renamer renamer = new Renamer();
+    Set<String> functionUsedSymbols = new HashSet<>();
 
     public VisitorContext(IRBuilder builder) {
         this.builder = builder;
@@ -105,7 +87,7 @@ public class VisitorContext {
         var getarrayType = new FunctionType(new IntType(32), List.of(new PointerType(new IntType(32))));
         gFuncSymTbl.put("getarray", getarrayType);
         // i32 @getfarray(float*)
-        var getfarrayType = new FunctionType(new FloatType(), List.of(new PointerType(new FloatType())));
+        var getfarrayType = new FunctionType(new IntType(32), List.of(new PointerType(new FloatType())));
         gFuncSymTbl.put("getfarray", getfarrayType);
         // i32 @getch()
         var getchType = new FunctionType(new IntType(32), List.of());
@@ -128,7 +110,6 @@ public class VisitorContext {
 
         gFuncSymTbl.forEach(builder::addFuncDeclaration);
     }
-
 
     public IRVal query(String name) {
         return lc.query(name);
@@ -183,8 +164,17 @@ public class VisitorContext {
             val.setName("@" + name);
             builder.addGlobal(name, val);
         }
+        if (val.getName().length() > 15) {
+            // hash to 16*HEX str, such as a7583658486293fa
+            val.setName("vh." + Integer.toHexString(name.hashCode()));
+        }
+        if (functionUsedSymbols.contains(val.getName())) {
+            val.setName(getNextRepeatName(val.getName()));
+        }
+        functionUsedSymbols.add(val.getName());
         lc.push(name, val);
     }
+
     public void pushConstVar(String name, IRVal val) {
         val.setConst(true);
         pushVar(name, val);
@@ -262,5 +252,22 @@ public class VisitorContext {
             var layer = layers.get(0);
             return layer.valSymbolTable.getOrDefault(name, null);
         }
+    }
+
+    class IC {
+        /*
+            // only for local array def.
+    std::vector<size_t>        curShape;
+    std::vector<size_t>        curArrayPos;
+    size_t                     curArrayDim;
+    string                     curArrId;
+    shared_ptr<IRCtrl::IRType> curArrType;
+    // end  for local array def
+         */
+        public List<Integer> curShape = new ArrayList<>();
+        public List<Integer> curArrayPos = new ArrayList<>();
+        public int curArrayDim;
+        public IRVal curArr;
+        public IRType curArrType;
     }
 }

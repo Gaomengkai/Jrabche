@@ -5,8 +5,9 @@ import java.util.List;
 
 public class FunctionType extends IRType {
 
-    private IRType retType;
     private final List<IRType> paramsType;
+    private IRType retType;
+
     public FunctionType() {
         super(IRBasicType.FUNCTION);
         paramsType = new ArrayList<>();

@@ -85,7 +85,7 @@ public class IRVarArray extends IRVal {
         if (valTypes.isEmpty()) {
             return "zeroinitializer";
         }
-        if(valTypes.stream().allMatch(v -> v == ValType.ZERO)) {
+        if (valTypes.stream().allMatch(v -> v == ValType.ZERO)) {
             return "zeroinitializer";
         }
         throw new NotImplementedException("IRVarArray.asValue()");

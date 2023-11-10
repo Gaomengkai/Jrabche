@@ -32,7 +32,6 @@
 package icu.merky.jrabche.llvmir.inst;
 
 import icu.merky.jrabche.llvmir.types.ArrayType;
-import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.types.InvalidType;
 import icu.merky.jrabche.llvmir.types.PointerType;
 import icu.merky.jrabche.llvmir.values.IRVal;

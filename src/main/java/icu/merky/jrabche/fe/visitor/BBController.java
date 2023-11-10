@@ -38,33 +38,20 @@ import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class BBController {
-    private record BBLayer(
-            IRBasicBlock condBB,
-            IRBasicBlock trueBB,
-            IRBasicBlock falseBB,
-            IRBasicBlock afterBB,
-            int curLayerNum,
-            BBLayerType type
-    ){
-        public enum  BBLayerType{
-            IF,
-                    WHILE,
-                    OR,AND
-        }
-    }
-
-    List<BBLayer> layers = new Vector<>();
     public static AtomicInteger ifCount = new AtomicInteger(0);
     public static AtomicInteger whileCount = new AtomicInteger(0);
     public static AtomicInteger orCount = new AtomicInteger(0);
     public static AtomicInteger andCount = new AtomicInteger(0);
+    List<BBLayer> layers = new Vector<>();
 
     public void pushIf(IRBasicBlock trueBB, IRBasicBlock falseBB, IRBasicBlock afterBB, int curLayerNum) {
-            layers.add(new BBLayer(null, trueBB, falseBB, afterBB, curLayerNum, BBLayer.BBLayerType.IF));
+        layers.add(new BBLayer(null, trueBB, falseBB, afterBB, curLayerNum, BBLayer.BBLayerType.IF));
     }
+
     public void pushWhile(IRBasicBlock trueBB, IRBasicBlock condBB, IRBasicBlock afterBB, int curLayerNum) {
-            layers.add(new BBLayer(condBB, trueBB, afterBB, afterBB, curLayerNum, BBLayer.BBLayerType.WHILE));
+        layers.add(new BBLayer(condBB, trueBB, afterBB, afterBB, curLayerNum, BBLayer.BBLayerType.WHILE));
     }
+
     public void pushOr(IRBasicBlock falseBB) {
         /*
          * if(a || b) {
@@ -74,6 +61,7 @@ public class BBController {
          */
         layers.add(new BBLayer(null, null, falseBB, null, -1, BBLayer.BBLayerType.OR));
     }
+
     public void pushAnd(IRBasicBlock trueBB) {
         /*
          * if(a && b) {
@@ -84,21 +72,23 @@ public class BBController {
          */
         layers.add(new BBLayer(null, trueBB, null, null, -1, BBLayer.BBLayerType.AND));
     }
+
     public void pop() {
-            layers.remove(layers.size() - 1);
+        layers.remove(layers.size() - 1);
     }
 
     public IRBasicBlock queryWhileCondBB() {
         for (int i = layers.size() - 1; i >= 0; i--) {
-            if(layers.get(i).type == BBLayer.BBLayerType.WHILE) {
+            if (layers.get(i).type == BBLayer.BBLayerType.WHILE) {
                 return layers.get(i).condBB;
             }
         }
         return null;
     }
+
     public IRBasicBlock queryWhileBreakBB() {
         for (int i = layers.size() - 1; i >= 0; i--) {
-            if(layers.get(i).type == BBLayer.BBLayerType.WHILE) {
+            if (layers.get(i).type == BBLayer.BBLayerType.WHILE) {
                 return layers.get(i).afterBB;
             }
         }
@@ -107,7 +97,7 @@ public class BBController {
 
     public IRBasicBlock queryTrueBB() {
         for (int i = layers.size() - 1; i >= 0; i--) {
-            if(layers.get(i).trueBB!=null) {
+            if (layers.get(i).trueBB != null) {
                 return layers.get(i).trueBB;
             }
         }
@@ -116,10 +106,25 @@ public class BBController {
 
     public IRBasicBlock queryFalseBB() {
         for (int i = layers.size() - 1; i >= 0; i--) {
-            if(layers.get(i).falseBB!=null) {
+            if (layers.get(i).falseBB != null) {
                 return layers.get(i).falseBB;
             }
         }
         return null;
+    }
+
+    private record BBLayer(
+            IRBasicBlock condBB,
+            IRBasicBlock trueBB,
+            IRBasicBlock falseBB,
+            IRBasicBlock afterBB,
+            int curLayerNum,
+            BBLayerType type
+    ) {
+        public enum BBLayerType {
+            IF,
+            WHILE,
+            OR, AND
+        }
     }
 }

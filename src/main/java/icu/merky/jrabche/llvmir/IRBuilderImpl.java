@@ -39,14 +39,15 @@ import icu.merky.jrabche.llvmir.types.FunctionType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class IRBuilderImpl implements IRBuilder {
 
 
     Map<String, IRVal> globals = new HashMap<>();
-    Map<String, IRFunction> functions = new HashMap<>();
-    Map<String, FunctionType> functionDeclarations=new HashMap<>();
+    Map<String, IRFunction> functions = new LinkedHashMap<>();
+    Map<String, FunctionType> functionDeclarations = new HashMap<>();
     IRFunction curFunc;
 
     @Override

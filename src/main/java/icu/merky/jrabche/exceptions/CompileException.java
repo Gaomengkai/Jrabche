@@ -32,22 +32,25 @@
 package icu.merky.jrabche.exceptions;
 
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-public class CompileException extends RuntimeException{
+public class CompileException extends RuntimeException {
+    public static int curLineNo = 0;
+    public static int curColNo = 0;
+
     public CompileException(String msg) {
-        super("Compile error: " + msg);
+        super("Compile error: " + msg + " at line " + curLineNo + ", column " + curColNo);
     }
+
     public CompileException(String msg, int lineno, int colno) {
         super("Compile error at line " + lineno + ", column " + colno + ": " + msg);
     }
 
     public CompileException(String msg, TerminalNode ctx) {
-        super("Compile error at line " +ctx.getSymbol().getLine() + ", column " + ctx.getSymbol().getCharPositionInLine() + ": " + msg);
+        super("Compile error at line " + ctx.getSymbol().getLine() + ", column " + ctx.getSymbol().getCharPositionInLine() + ": " + msg);
     }
 
     public CompileException(String msg, ParserRuleContext ctx) {
-        super("Compile error at line " +ctx.getStart().getLine() + ", column " + ctx.getStart().getCharPositionInLine() + ": " + msg);
+        super("Compile error at line " + ctx.getStart().getLine() + ", column " + ctx.getStart().getCharPositionInLine() + ": " + msg);
     }
 }

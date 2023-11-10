@@ -41,6 +41,7 @@ public class IRInstFcmp extends IRInst {
     private FcmpOp op;
     private IRVal lhs, rhs;
     private IRType opType;
+
     /**
      * Create a new fcmp instruction
      *

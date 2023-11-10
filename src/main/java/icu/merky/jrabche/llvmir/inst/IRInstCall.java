@@ -32,24 +32,24 @@
 package icu.merky.jrabche.llvmir.inst;
 
 import icu.merky.jrabche.llvmir.types.FunctionType;
-import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
 import java.util.List;
 
-public class IRInstCall extends IRInst{
+public class IRInstCall extends IRInst {
     List<IRVal> args;
     String funcName;
 
     /**
      * You MUST do implicit type conversion before calling this constructor.
+     *
      * @param functionType Function type.
-     * @param args       Arguments.
+     * @param args         Arguments.
      */
-    public IRInstCall(String funcName,FunctionType functionType, List<IRVal> args) {
+    public IRInstCall(String funcName, FunctionType functionType, List<IRVal> args) {
         super(InstID.CallInst, functionType.getRetType());
         this.args = args;
-        this.funcName=funcName;
+        this.funcName = funcName;
         // check args type
         if (args.size() != functionType.getParamsType().size())
             throw new RuntimeException("Argument number mismatch.");
@@ -61,14 +61,14 @@ public class IRInstCall extends IRInst{
 
     @Override
     public String toString() {
-        StringBuilder sb=new StringBuilder();
-        if(name!=null){
+        StringBuilder sb = new StringBuilder();
+        if (name != null) {
             sb.append(name).append(" = ");
         }
         sb.append("call ").append(type.toString()).append(" @").append(funcName).append("(");
-        for(int i=0;i<args.size();i++){
+        for (int i = 0; i < args.size(); i++) {
             sb.append(args.get(i).getType().toString()).append(" ").append(args.get(i).asValue());
-            if(i!=args.size()-1){
+            if (i != args.size() - 1) {
                 sb.append(", ");
             }
         }
@@ -78,9 +78,9 @@ public class IRInstCall extends IRInst{
 
     @Override
     public boolean replace(IRVal inst, IRVal newInst) {
-        for(int i=0;i<args.size();i++){
-            if(args.get(i).equals(inst)){
-                args.set(i,newInst);
+        for (int i = 0; i < args.size(); i++) {
+            if (args.get(i).equals(inst)) {
+                args.set(i, newInst);
                 return true;
             }
         }

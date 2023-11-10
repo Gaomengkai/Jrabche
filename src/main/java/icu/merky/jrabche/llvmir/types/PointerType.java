@@ -11,6 +11,7 @@ public class PointerType extends IRType {
     static public PointerType MakePointer(IRType elementType) {
         return new PointerType(elementType);
     }
+
     static public PointerType MakePointer(IRType elementType, int level) {
         PointerType pointerType = new PointerType(elementType);
         for (int i = 1; i < level; i++) {

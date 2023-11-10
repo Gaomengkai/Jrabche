@@ -44,7 +44,10 @@ import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.values.IRValConst;
 import icu.merky.jrabche.llvmir.values.IRValFP;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class IRFunctionImpl implements IRFunction {
@@ -61,12 +64,7 @@ public class IRFunctionImpl implements IRFunction {
      */
     Map<String, IRValFP> fp = new LinkedHashMap<>();
 
-    static AtomicInteger counter = new AtomicInteger(0);
-
-    @Override
-    public FunctionType getFunctionType() {
-        return functionType;
-    }
+    AtomicInteger counter = new AtomicInteger(0);
 
     public IRFunctionImpl(String name, FunctionType functionType) {
         this.functionType = functionType;
@@ -77,6 +75,11 @@ public class IRFunctionImpl implements IRFunction {
         bbs.add(entryBB);
         curBB = entryBB;
         this.name = name;
+    }
+
+    @Override
+    public FunctionType getFunctionType() {
+        return functionType;
     }
 
     @Override

@@ -38,14 +38,13 @@ import icu.merky.jrabche.llvmir.types.FunctionType;
 import icu.merky.jrabche.llvmir.types.IRBasicType;
 import org.junit.jupiter.api.Test;
 
-import static icu.merky.jrabche.fe.visitor.SylangVisitorImplTest.getVisitorContext;
 import static icu.merky.jrabche.fe.visitor.Helper.LLCCompileTest;
+import static icu.merky.jrabche.fe.visitor.SylangVisitorImplTest.getVisitorContext;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestGlobal {
     @Test
-    void TestGlobalRead()  throws NoSuchFieldException, IllegalAccessException {
+    void TestGlobalRead() throws NoSuchFieldException, IllegalAccessException {
         String funcName = Thread.currentThread().getStackTrace()[1].getMethodName();
         String program = """
                 const int k=0;
@@ -54,7 +53,7 @@ public class TestGlobal {
                 if(k==1) {return 1;}
                 return 0;
                 }
-                
+                                
                 int main() {
                 int arr[10] = {1};
                 int aa=getint();
@@ -64,9 +63,9 @@ public class TestGlobal {
                 putint(aa+bb+arr[0]);
                 return 1;
                 }""".formatted(funcName);
-        IRBuilder builder= new IRBuilderImpl();
-        VisitorContext C = getVisitorContext(program,builder);
-        IRModule module= builder.getModule();
+        IRBuilder builder = new IRBuilderImpl();
+        VisitorContext C = getVisitorContext(program, builder);
+        IRModule module = builder.getModule();
         String moduleStr = module.toString();
         String funcString = C.builder.curFunc().toString();
         System.out.println(moduleStr);
@@ -74,7 +73,7 @@ public class TestGlobal {
         // assertTrue(LLCCompileTest(funcString));
         assertTrue(LLCCompileTest(moduleStr));
 
-        FunctionType functionType=C.queryFunctionType(funcName);
+        FunctionType functionType = C.queryFunctionType(funcName);
         assertNotNull(functionType);
         assertEquals(IRBasicType.INT, functionType.getRetType().getBasicType());
         assertEquals(1, functionType.getParamsType().size());

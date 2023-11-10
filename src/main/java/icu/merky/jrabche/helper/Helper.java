@@ -162,7 +162,7 @@ public class Helper {
                 }
                 case FLOAT -> {
                     if (val instanceof IRValConstInt) {
-                        return new IRValConstFloat(((IRValConstInt) val).getValue());
+                        return new IRValConstFloat((float) ((IRValConstInt) val).getValue());
                     } else if (val instanceof IRValConstFloat) {
                         return (IRValConstFloat) val;
                     } else if (val instanceof IRValConstBool) {
@@ -184,7 +184,7 @@ public class Helper {
         } else if (val instanceof IRValConstInt) {
             return new IRValConstBool(((IRValConstInt) val).getValue());
         } else if (val instanceof IRValConstFloat) {
-            return new IRValConstBool((int) ((IRValConstFloat) val).getValue());
+            return new IRValConstBool(((IRValConstFloat) val).getValue() == 0 ? 0 : 1);
         } else {
             throw new RuntimeException("Not a bool");
         }
@@ -218,6 +218,13 @@ public class Helper {
                         throw new RuntimeException("Not a number");
                     }
                 }
+                case POINTER -> {
+                    if (val.getType().isPointer()) {
+                        C.lastVal = val;
+                    } else {
+                        throw new RuntimeException("Not a pointer");
+                    }
+                }
                 default -> throw new IllegalStateException("Unexpected value: " + atomType);
             }
         }
@@ -236,7 +243,7 @@ public class Helper {
         if (resolvedType.equals(IRBasicType.INT)) {
             C.lastVal = C.addInst(new IRInstMath(op, lhs, rhs));
         } else if (resolvedType.equals(IRBasicType.FLOAT)) {
-            C.lastVal = C.addInst(new IRInstMath(op, rhs, rhs));
+            C.lastVal = C.addInst(new IRInstMath(op, lhs, rhs));
         } else {
             throw new RuntimeException("MathOP error");
         }

@@ -24,5 +24,6 @@ public interface IRBuilder {
     IRFunction curFunc();
 
     IRBasicBlock curBB();
+
     IRModule getModule();
 }

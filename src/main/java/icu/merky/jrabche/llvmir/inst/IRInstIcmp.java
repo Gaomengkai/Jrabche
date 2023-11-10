@@ -39,6 +39,7 @@ public class IRInstIcmp extends IRInst {
     private IcmpOp op;
     private IRVal lhs, rhs;
     private IRType opType;
+
     /**
      * Create icmp instruction
      *

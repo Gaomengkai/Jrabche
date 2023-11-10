@@ -46,6 +46,7 @@ public class ConstInitList extends IRVal {
     public List<IRValConst> constVals;
     public List<ILType> witch;
     public List<Integer> indices;
+
     public ConstInitList(IRBasicType atomType) {
         super(new InvalidType());
         containedType = atomType;

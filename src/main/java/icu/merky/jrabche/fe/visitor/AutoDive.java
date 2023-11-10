@@ -34,17 +34,20 @@ package icu.merky.jrabche.fe.visitor;
 public class AutoDive implements AutoCloseable {
     VisitorContext.LayerCtrl lc;
     GlobalSwitcher gs;
+
     public AutoDive(VisitorContext.LayerCtrl lc) {
-        this.lc=lc;
+        this.lc = lc;
         lc.dive();
     }
-    public AutoDive(GlobalSwitcher gs,boolean b) {
-        this.gs=gs;
+
+    public AutoDive(GlobalSwitcher gs, boolean b) {
+        this.gs = gs;
         gs.dive(b);
     }
+
     @Override
     public void close() throws Exception {
-        if(lc!=null)lc.ascend();
-        if(gs!=null)gs.ascend();
+        if (lc != null) lc.ascend();
+        if (gs != null) gs.ascend();
     }
 }

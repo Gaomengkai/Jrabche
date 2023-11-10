@@ -49,7 +49,7 @@ public class TestArray {
                 }
                 """.formatted(funcName);
         IRBuilder builder = new IRBuilderImpl();
-        VisitorContext C = getVisitorContext(program,builder);
+        VisitorContext C = getVisitorContext(program, builder);
         String moduleString = builder.getModule().toString();
         System.out.println(moduleString);
         assertTrue(Helper.LLCCompileTest(moduleString));
@@ -65,7 +65,7 @@ public class TestArray {
                 }
                 """.formatted(funcName);
         IRBuilder builder = new IRBuilderImpl();
-        VisitorContext C = getVisitorContext(program,builder);
+        VisitorContext C = getVisitorContext(program, builder);
         String moduleString = builder.getModule().toString();
         System.out.println(moduleString);
         assertTrue(Helper.LLCCompileTest(moduleString));
@@ -96,11 +96,12 @@ public class TestArray {
                 }
                 """;
         IRBuilder builder = new IRBuilderImpl();
-        VisitorContext C = getVisitorContext(program,builder);
+        VisitorContext C = getVisitorContext(program, builder);
         String moduleString = builder.getModule().toString();
         System.out.println(moduleString);
         assertTrue(Helper.LLCCompileTest(moduleString));
     }
+
     @Test
     public void TestGlobalArray1() throws NoSuchFieldException, IllegalAccessException {
         String funcName = Thread.currentThread().getStackTrace()[1].getMethodName();
@@ -117,16 +118,17 @@ public class TestArray {
                     return b+c[1][1];
                 }
                 int main(){return %s();}
-                """.formatted(funcName,funcName);
+                """.formatted(funcName, funcName);
         IRBuilder builder = new IRBuilderImpl();
-        VisitorContext C = getVisitorContext(program,builder);
+        VisitorContext C = getVisitorContext(program, builder);
         String moduleString = builder.getModule().toString();
         System.out.println(moduleString);
         assertTrue(Helper.LLCCompileTest(moduleString));
-        int retCodeShouldBe = 6+5;
-        String outputShouldBe = "%d\n%d".formatted(6,5);
-        Helper.LLIRunLastLL(retCodeShouldBe,outputShouldBe);
+        int retCodeShouldBe = 6 + 5;
+        String outputShouldBe = "%d\n%d".formatted(6, 5);
+        Helper.LLIRunLastLL(retCodeShouldBe, outputShouldBe);
     }
+
     @Test
     public void TestGlobalArray2() throws NoSuchFieldException, IllegalAccessException {
         String funcName = Thread.currentThread().getStackTrace()[1].getMethodName();
@@ -139,11 +141,12 @@ public class TestArray {
                 }
                 """.formatted(funcName);
         IRBuilder builder = new IRBuilderImpl();
-        VisitorContext C = getVisitorContext(program,builder);
+        VisitorContext C = getVisitorContext(program, builder);
         String moduleString = builder.getModule().toString();
         // System.out.println(moduleString);
         assertTrue(Helper.LLCCompileTest(moduleString));
     }
+
     @Test
     public void TestGlobalConstArray1() throws NoSuchFieldException, IllegalAccessException {
         String funcName = Thread.currentThread().getStackTrace()[1].getMethodName();
@@ -155,7 +158,7 @@ public class TestArray {
                 }
                 """.formatted(funcName);
         IRBuilder builder = new IRBuilderImpl();
-        VisitorContext C = getVisitorContext(program,builder);
+        VisitorContext C = getVisitorContext(program, builder);
         String moduleString = builder.getModule().toString();
         System.out.println(moduleString);
         assertTrue(Helper.LLCCompileTest(moduleString));
@@ -174,35 +177,35 @@ public class TestArray {
                 int main(){
                 return %s();
                 }
-                """.formatted(funcName,funcName);
+                """.formatted(funcName, funcName);
         IRBuilder builder = new IRBuilderImpl();
-        VisitorContext C = getVisitorContext(program,builder);
+        VisitorContext C = getVisitorContext(program, builder);
         String moduleString = builder.getModule().toString();
         // System.out.println(moduleString);
         assertTrue(Helper.LLCCompileTest(moduleString));
-        assertTrue(Helper.LLIRunLastLL(0,"0"));
+        assertTrue(Helper.LLIRunLastLL(0, "0"));
     }
 
     @Test
     public void TestGlobalConstArray3() throws NoSuchFieldException, IllegalAccessException {
         String funcName = Thread.currentThread().getStackTrace()[1].getMethodName();
         String program = """
-int main(){
-    const int a[4][2] = {{1, 2}, {3, 4}, {}, 7};
-    const int N = 3;
-    int b[4][2] = {};
-    int c[4][2] = {1, 2, 3, 4, 5, 6, 7, 8};
-    int d[N + 1][2] = {1, 2, {3}, {5}, a[3][0], 8};
-    int e[4][2][1] = {{d[2][1], {c[2][1]}}, {3, 4}, {5, 6}, {7, 8}};
-    return e[3][1][0] + e[0][0][0] + e[0][1][0] + d[3][0];
-}
+                int main(){
+                    const int a[4][2] = {{1, 2}, {3, 4}, {}, 7};
+                    const int N = 3;
+                    int b[4][2] = {};
+                    int c[4][2] = {1, 2, 3, 4, 5, 6, 7, 8};
+                    int d[N + 1][2] = {1, 2, {3}, {5}, a[3][0], 8};
+                    int e[4][2][1] = {{d[2][1], {c[2][1]}}, {3, 4}, {5, 6}, {7, 8}};
+                    return e[3][1][0] + e[0][0][0] + e[0][1][0] + d[3][0];
+                }
 
-                """;
+                                """;
         IRBuilder builder = new IRBuilderImpl();
-        VisitorContext C = getVisitorContext(program,builder);
+        VisitorContext C = getVisitorContext(program, builder);
         String moduleString = builder.getModule().toString();
         // System.out.println(moduleString);
         assertTrue(Helper.LLCCompileTest(moduleString));
-        assertTrue(Helper.LLIRunLastLL(21,""));
+        assertTrue(Helper.LLIRunLastLL(21, ""));
     }
 }

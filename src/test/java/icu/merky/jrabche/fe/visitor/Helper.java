@@ -75,8 +75,20 @@ public class Helper {
          * */
         try {
             // save p's stdout,stderr to a str
-            String cmd =
-                    "lli --extra-archive=\"D:\\SDK\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\13.1.0\\libgcc.a\" --extra-archive=\"D:\\Code\\3\\sylib\\cmake-build-debug-gcc13\\libsy.a\" --extra-archive=\"D:\\SDK\\mingw64\\x86_64-w64-mingw32\\lib\\libmingwex.a\" ";
+            StringBuilder cmdBuilder = new StringBuilder();
+            cmdBuilder.append("lli ");
+            cmdBuilder.append("--extra-archive=\"");
+            cmdBuilder.append(FETestConfig.LIB_GCC);
+            cmdBuilder.append("\" ");
+            cmdBuilder.append("--extra-archive=\"");
+            cmdBuilder.append(FETestConfig.LIB_SY);
+            cmdBuilder.append("\" ");
+            cmdBuilder.append("--extra-archive=\"");
+            cmdBuilder.append(FETestConfig.LIB_MINGWEX);
+            cmdBuilder.append("\" ");
+
+            String cmd = cmdBuilder.toString();
+
             File lastll = new File(System.getProperty("java.io.tmpdir"), "test.ll");
             cmd += lastll.getAbsolutePath();
             Process p = Runtime.getRuntime().exec(cmd);
@@ -107,7 +119,7 @@ public class Helper {
             String[] outListExpected = stdoutExpected.split("\n|\r\n");
             Assertions.assertEquals(outListExpected.length, outList.length);
             for (int j = 0; j < outList.length; j++) {
-                Assertions.assertEquals(outListExpected[j], outList[j],"At Line %d.".formatted(j));
+                Assertions.assertEquals(outListExpected[j], outList[j], "At Line %d.".formatted(j));
             }
             return true;
         } catch (java.io.IOException | InterruptedException e) {

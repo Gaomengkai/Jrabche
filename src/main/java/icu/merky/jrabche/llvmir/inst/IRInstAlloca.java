@@ -45,7 +45,7 @@ public class IRInstAlloca extends IRInst {
     }
 
     public IRType getAllocatedType() {
-        return ((PointerType)type).getElementType();
+        return ((PointerType) type).getElementType();
     }
 
     @Override
@@ -55,7 +55,7 @@ public class IRInstAlloca extends IRInst {
 
     @Override
     public String toString() {
-        return getName() + " = alloca " + ((PointerType)type).getElementType();
+        return getName() + " = alloca " + ((PointerType) type).getElementType();
     }
 
     @Override

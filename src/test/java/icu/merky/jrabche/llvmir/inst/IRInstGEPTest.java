@@ -34,15 +34,13 @@ package icu.merky.jrabche.llvmir.inst;
 import icu.merky.jrabche.llvmir.types.ArrayType;
 import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.types.IntType;
-import icu.merky.jrabche.llvmir.values.IRVal;
-import icu.merky.jrabche.llvmir.values.IRValConstArray;
 import icu.merky.jrabche.llvmir.values.IRValConstInt;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static icu.merky.jrabche.llvmir.types.PointerType.MakePointer;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class IRInstGEPTest {
     @Test
@@ -52,6 +50,7 @@ class IRInstGEPTest {
         IRInstGEP gep = new IRInstGEP(alloca, List.of(IRValConstInt.ZeroInt()));
         assertEquals(MakePointer(ty), gep.getType());
     }
+
     @Test
     void TestGEPType2() {
         // %2 = alloca [3 x i32]*, align 8
@@ -70,6 +69,7 @@ class IRInstGEPTest {
         IRInstGEP gep = new IRInstGEP(alloca, List.of(IRValConstInt.ZeroInt(), IRValConstInt.fromInt(1)));
         assertEquals(MakePointer(new IntType()), gep.getType());
     }
+
     @Test
     void TestGEPType4() {
         // %2 = alloca [3 x i32]*, align 8

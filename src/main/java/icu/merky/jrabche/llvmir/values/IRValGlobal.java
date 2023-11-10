@@ -33,15 +33,18 @@ package icu.merky.jrabche.llvmir.values;
 
 import static icu.merky.jrabche.llvmir.types.PointerType.MakePointer;
 
-public class IRValGlobal extends IRVal{
+public class IRValGlobal extends IRVal {
     IRVal ptr;
+
     public IRValGlobal(IRVal v) {
         super(MakePointer(v.getType()));
         ptr = v;
     }
+
     public IRVal getElement() {
         return ptr;
     }
+
     @Override
     public String asValue() {
         return getName();

@@ -45,6 +45,7 @@ public abstract class IRInst extends IRVal implements Cloneable, Replaceable, Va
         this.type = valType;
         this.instID = instID;
     }
+
     public IRInst(InstID instID, IRType valType) {
         super(valType);
         this.type = valType;
@@ -129,11 +130,12 @@ public abstract class IRInst extends IRVal implements Cloneable, Replaceable, Va
     public boolean isPhiInst() {
         return instID == InstID.PhiInst;
     }
+
     public boolean needName() {
-        if( isTerminatorInst() ||isStoreInst())
+        if (isTerminatorInst() || isStoreInst())
             return false;
-        if(isCallInst()) {
-            if(this instanceof IRInstCall call)
+        if (isCallInst()) {
+            if (this instanceof IRInstCall call)
                 return !call.getType().isVoid();
             throw new RuntimeException("CallInst need IRInstCall");
         }

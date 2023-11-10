@@ -28,15 +28,17 @@ abstract public class IRType implements Cloneable {
     public boolean isInt() {
         return type == IRBasicType.INT;
     }
+
     public boolean isI32() {
-        if(type == IRBasicType.INT) {
-            return ((IntType)this).getBitWidth() == 32;
+        if (type == IRBasicType.INT) {
+            return ((IntType) this).getBitWidth() == 32;
         }
         return false;
     }
+
     public boolean isI1() {
-        if(type == IRBasicType.INT) {
-            return ((IntType)this).getBitWidth() == 1;
+        if (type == IRBasicType.INT) {
+            return ((IntType) this).getBitWidth() == 1;
         }
         return false;
     }
@@ -76,7 +78,10 @@ abstract public class IRType implements Cloneable {
     public IRBasicType toBasicType() {
         return type;
     }
-    public IRBasicType getBasicType() {return type;}
+
+    public IRBasicType getBasicType() {
+        return type;
+    }
 
     @Override
     public abstract IRType clone();

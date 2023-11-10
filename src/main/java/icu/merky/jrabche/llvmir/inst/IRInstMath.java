@@ -35,18 +35,13 @@ import icu.merky.jrabche.helper.Helper;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
 public class IRInstMath extends IRInst {
-    public enum MathOP {
-        Invalid, Add, Sub, Mul, Div, Rem, Shl, Shr, And, Or, Xor
-    }
-
     MathOP mathOP;
     IRVal lhs, rhs;
-
-    public IRInstMath(MathOP mathOP,IRVal v1, IRVal v2) {
+    public IRInstMath(MathOP mathOP, IRVal v1, IRVal v2) {
         super(null, InstID.MathInst, Helper.ResolveType(v1.getType(), v2.getType()).toIRType());
-        this.mathOP=mathOP;
-        this.lhs=v1;
-        this.rhs=v2;
+        this.mathOP = mathOP;
+        this.lhs = v1;
+        this.rhs = v2;
     }
 
     @Override
@@ -54,9 +49,9 @@ public class IRInstMath extends IRInst {
         // %v18 = add i32 %v16, %v17
         StringBuilder sb = new StringBuilder();
         sb.append(name).append(" = ");
-        if(this.type.isFloat())
+        if (this.type.isFloat())
             sb.append("f");
-        else if(this.mathOP==MathOP.Rem||this.mathOP==MathOP.Div)
+        else if (this.mathOP == MathOP.Rem || this.mathOP == MathOP.Div)
             sb.append("s");
         sb.append(mathOP.toString().toLowerCase()).append(" ");
         sb.append(type.toString()).append(" ");
@@ -66,12 +61,12 @@ public class IRInstMath extends IRInst {
 
     @Override
     public boolean replace(IRVal inst, IRVal newInst) {
-        if(lhs.equals(inst)) {
-            lhs=newInst;
+        if (lhs.equals(inst)) {
+            lhs = newInst;
             return true;
         }
         if (rhs.equals(inst)) {
-            rhs=newInst;
+            rhs = newInst;
             return true;
         }
         return false;
@@ -80,5 +75,9 @@ public class IRInstMath extends IRInst {
     @Override
     public String asValue() {
         return name;
+    }
+
+    public enum MathOP {
+        Invalid, Add, Sub, Mul, Div, Rem, Shl, Shr, And, Or, Xor
     }
 }

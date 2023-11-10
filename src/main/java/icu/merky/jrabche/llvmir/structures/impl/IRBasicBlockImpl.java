@@ -39,10 +39,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class IRBasicBlockImpl implements IRBasicBlock {
-    private String name;
     private final LinkedList<IRInst> instList;
     private final List<IRBasicBlock> prevs;
     private final List<IRBasicBlock> nexts;
+    private String name;
     private boolean relationsWasBuilt;
 
     public IRBasicBlockImpl() {
@@ -127,9 +127,9 @@ public class IRBasicBlockImpl implements IRBasicBlock {
 
     @Override
     public void chunkAfterTerminator() {
-        for (int i = 0;i<instList.size();i++) {
+        for (int i = 0; i < instList.size(); i++) {
             if (instList.get(i).isTerminatorInst()) {
-                instList.subList(i+1,instList.size()).clear();
+                instList.subList(i + 1, instList.size()).clear();
                 return;
             }
         }
@@ -137,7 +137,7 @@ public class IRBasicBlockImpl implements IRBasicBlock {
 
     @Override
     public String toString() {
-        StringBuilder sb =new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         sb.append(name).append(":\n");
         for (IRInst inst : instList) {
             sb.append("\t").append(inst.toString()).append("\n");

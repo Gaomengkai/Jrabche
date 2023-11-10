@@ -9,26 +9,18 @@ public abstract class IRValConst extends IRVal {
         setConst(true);
     }
 
-    public boolean isZero() {
-        if (this instanceof IRValConstInt) {
-            return ((IRValConstInt) this).getValue() == 0;
-        } else if(this instanceof IRValConstFloat) {
-            return ((IRValConstFloat) this).getValue() == 0;
-        } else if(this instanceof IRValConstBool) {
-            return ((IRValConstBool) this).getValue() == 0;
-        }
-        return false;
-    }
-
-    public  static IRValConstInt ZeroInt() {
+    public static IRValConstInt ZeroInt() {
         return new IRValConstInt(0);
     }
+
     public static IRValConstFloat ZeroFloat() {
-        return new IRValConstFloat(0);
+        return new IRValConstFloat(0.0f);
     }
+
     public static IRValConstBool ZeroBool() {
         return new IRValConstBool(0);
     }
+
     public static IRValConst Zero(IRBasicType type) {
         switch (type) {
             case INT -> {
@@ -42,6 +34,18 @@ public abstract class IRValConst extends IRVal {
             }
         }
     }
+
+    public boolean isZero() {
+        if (this instanceof IRValConstInt) {
+            return ((IRValConstInt) this).getValue() == 0;
+        } else if (this instanceof IRValConstFloat) {
+            return ((IRValConstFloat) this).getValue() == 0;
+        } else if (this instanceof IRValConstBool) {
+            return ((IRValConstBool) this).getValue() == 0;
+        }
+        return false;
+    }
+
     @Override
     public IRValConst clone() {
         var clone = (IRValConst) super.clone();

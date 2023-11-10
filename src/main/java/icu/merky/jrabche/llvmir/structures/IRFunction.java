@@ -32,7 +32,9 @@ public interface IRFunction {
     IRBasicBlock getBlock(String name);
 
     List<IRBasicBlock> getBlocks();
+
     IRInstAlloca addAlloca(IRInstAlloca inst);
+
     List<IRInstAlloca> getAlloca();
 
     void finishFunction();

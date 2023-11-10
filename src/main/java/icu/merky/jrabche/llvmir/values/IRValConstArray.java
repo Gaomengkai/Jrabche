@@ -1,8 +1,8 @@
 package icu.merky.jrabche.llvmir.values;
 
 import icu.merky.jrabche.exceptions.NotImplementedException;
-import icu.merky.jrabche.helper.Helper;
 import icu.merky.jrabche.helper.ConstInitList;
+import icu.merky.jrabche.helper.Helper;
 import icu.merky.jrabche.llvmir.types.ArrayType;
 import icu.merky.jrabche.llvmir.types.IRBasicType;
 import icu.merky.jrabche.llvmir.types.IRType;
@@ -46,6 +46,7 @@ public class IRValConstArray extends IRValConst {
             childVals.add(null);
         }
     }
+
     public IRValConstArray(ArrayType ty, List<ValType> valTypes, List<IRValConst> childVals, List<IRValConstArray> childArrays, List<Integer> shapes) {
         super(ty);
         this.valTypes = valTypes;
@@ -53,6 +54,7 @@ public class IRValConstArray extends IRValConst {
         this.childArrays = childArrays;
         this.shapes = shapes;
     }
+
     public IRValConstArray(IRValConstArray another) {
         super(another.getType());
         this.shapes = another.getShapes();
@@ -63,7 +65,7 @@ public class IRValConstArray extends IRValConst {
 
     public static IRValConstArray FromInitList(ConstInitList il, ArrayType arrayType) {
         var arr = new IRValConstArray(arrayType);
-        var gen = new ConstArrayGenerator(il,arr);
+        var gen = new ConstArrayGenerator(il, arr);
         gen.gen();
         arr = gen.arr;
         arr.reduceZero();
@@ -77,25 +79,26 @@ public class IRValConstArray extends IRValConst {
         boolean allZero = true;
         for (int i = 0; i < valTypes.size(); i++) {
             ValType t = valTypes.get(i);
-            if(t==ValType.ZERO) continue;
-            if(t==ValType.VAL) {
-                if(childVals.get(i).isZero()) {
-                    valTypes.set(i,ValType.ZERO);
+            if (t == ValType.ZERO) continue;
+            if (t == ValType.VAL) {
+                if (childVals.get(i).isZero()) {
+                    valTypes.set(i, ValType.ZERO);
                 } else {
-                    allZero=false;
+                    allZero = false;
                 }
             } else { // t==ValType.ARR
-                if(childArrays.get(i).reduceZero()) {
-                    valTypes.set(i,ValType.ZERO);
+                if (childArrays.get(i).reduceZero()) {
+                    valTypes.set(i, ValType.ZERO);
                 } else {
-                    allZero=false;
+                    allZero = false;
                 }
             }
         }
         return allZero;
     }
+
     public IRValConst get(List<Integer> target) {
-        if(valTypes.size()==0) {
+        if (valTypes.size() == 0) {
             return null;
         }
         var t = valTypes.get(target.get(0));
@@ -156,7 +159,7 @@ public class IRValConstArray extends IRValConst {
         // TODO
         StringBuilder sb = new StringBuilder();
         // sb.append(this.type.toString()).append(" ");
-        if(this.valTypes.stream().allMatch(x->x==ValType.ZERO)) {
+        if (this.valTypes.stream().allMatch(x -> x == ValType.ZERO)) {
             sb.append("zeroinitializer");
         } else {
             sb.append("[");
@@ -165,8 +168,8 @@ public class IRValConstArray extends IRValConst {
                 IRType elemType = ((ArrayType) this.type).getElementType();
                 sb.append(elemType.toString()).append(" ");
                 if (t == ValType.ZERO) {
-                    if(elemType.isFloat()) sb.append("0x");
-                    sb.append(elemType.isScalar()?"0":"zeroinitializer");
+                    if (elemType.isFloat()) sb.append("0x");
+                    sb.append(elemType.isScalar() ? "0" : "zeroinitializer");
                 } else if (t == ValType.VAL) {
                     sb.append(childVals.get(i).asValue());
                 } else {
@@ -197,7 +200,7 @@ public class IRValConstArray extends IRValConst {
             }
             this.shape = arr.shapes;
             this.basicType = arr.getArrayType().getAtomType();
-            this.iList=iList;
+            this.iList = iList;
         }
 
         public void gen() {

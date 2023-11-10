@@ -66,11 +66,10 @@ public class ArrayType extends IRType {
     }
 
     public int getSizeBytes() {
-        if(size==-1) {
+        if (size == -1) {
             // pointer
             return 8;
-        }
-        else if (elementType.isInt()) {
+        } else if (elementType.isInt()) {
             return size * ((IntType) elementType).getBitWidth() / 8;
         } else if (elementType.isFloat()) {
             return size * 4;

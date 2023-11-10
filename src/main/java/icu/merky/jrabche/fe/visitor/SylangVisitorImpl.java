@@ -44,7 +44,10 @@ import icu.merky.jrabche.llvmir.structures.impl.IRFunctionImpl;
 import icu.merky.jrabche.llvmir.types.*;
 import icu.merky.jrabche.llvmir.values.*;
 import icu.merky.jrabche.utils.Finished;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
+import org.antlr.v4.runtime.tree.RuleNode;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -246,7 +249,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
             } else {
                 // local var, array
                 ArrayType arrayType = ArrayType.FromShape(atomType, shape);
-                IRInstAlloca alloca = C.addAlloca(new IRInstAlloca(name, arrayType));
+                IRInstAlloca alloca = C.addAlloca(new IRInstAlloca(renamed, arrayType));
                 if (ctx.initVal() != null) {
                     // local var, array with init
                     try (AutoDive ignored = new AutoDive(C.needLoad, true)) {
@@ -328,7 +331,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
                     C.pushVar(name, new IRValArray(carr));
                 } else {
                     // C.pushVar(name, new IRVarArray(ArrayType.FromShape(atomType, shape)));
-                    C.pushVar(name, new IRValArray(ArrayType.FromShape(atomType,shape)));
+                    C.pushVar(name, new IRValArray(ArrayType.FromShape(atomType, shape)));
                 }
             }
         } catch (Exception e) {
@@ -382,16 +385,17 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
                 C.ic.curArrayDim--;
                 // $accept#
 
-                IRVal lastVal = C.lastVal;
-                if (lastVal.getType().isScalar()) {
-                    DoRuntimeConversion(C, innerType.toBasicType(), lastVal);
+                IRVal curValue = C.lastVal;
+                if (curValue.getType().isScalar()) {
+                    DoRuntimeConversion(C, innerType.toBasicType(), curValue);
+                    curValue = C.lastVal;
                     List<IRVal> indices = new ArrayList<>();
                     indices.add(IRValConstInt.ZeroInt());
                     for (int i = 0; i < C.ic.curArrayPos.size(); i++) {
                         indices.add(IRValConstInt.fromInt(C.ic.curArrayPos.get(i)));
                     }
-                    C.addAndUpdate(new IRInstGEP(C.ic.curArr, indices));
-                    C.addAndUpdate(new IRInstStore(lastVal, C.lastVal));
+                    var gem = C.addInst(new IRInstGEP(C.ic.curArr, indices));
+                    C.addAndUpdate(new IRInstStore(curValue, gem));
                     ArrayPosPlusN(C.ic.curShape, C.ic.curArrayPos, 1);
                 } else {
                     // this branch is InitList.
@@ -416,6 +420,9 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         ctx.funcType().accept(this);
         var funcRetType = C.bType.toBasicType().toIRType();
         String name = ctx.Ident().getText();
+        if (C.queryFunctionType(name) != null) {
+            throw new CompileException("redefinition of function `" + name + "`");
+        }
         List<FPType> fpTypes = new ArrayList<>();
         if (ctx.funcFParams() != null) {
             ctx.funcFParams().funcFParam().forEach(a -> {
@@ -432,10 +439,13 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         C.gFuncSymTbl.put(name, funcType);
         C.lc.dive();
         C.inAtarashiiFunction = true;
+
+        C.functionUsedSymbols.clear();
+
         // add fParams alloca and store.
         fpTypes.forEach(fpType -> {
             var alloca = C.addAlloca(new IRInstAlloca(fpType.name(), fpType.type()));
-            C.lc.push(fpType.name(), alloca);
+            C.pushVar(fpType.name(), alloca);
             var f = C.builder.curFunc().addFP(fpType);
             C.addInst(new IRInstStore(f, alloca));
         });
@@ -763,19 +773,29 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
     @Override
     public Void visitCall(SylangParser.CallContext ctx) {
         List<IRVal> args = new ArrayList<>();
-        C.needLoad.dive(true);
-        if (ctx.funcRParams() != null) {
-            ctx.funcRParams().funcRParam().forEach(a -> {
-                a.accept(this);
-                args.add(C.lastVal);
-            });
-        }
-        C.needLoad.ascend();
+
         var funcName = ctx.Ident().getText();
         var funcType = C.gFuncSymTbl.get(funcName);
         if (funcType == null) {
             throw new CompileException("function `" + funcName + "` not found", ctx.Ident());
         }
+
+        C.needLoad.dive(true);
+        if (ctx.funcRParams() != null) {
+            if (ctx.funcRParams().funcRParam().size() != funcType.getParamsType().size()) {
+                throw new CompileException("function `" + funcName + "` need " + funcType.getParamsType().size() + " params", ctx.Ident());
+            }
+            for (int i = 0; i < ctx.funcRParams().funcRParam().size(); i++) {
+                var paramType = funcType.getParamsType().get(i);
+                var arg = ctx.funcRParams().funcRParam(i);
+                arg.accept(this);
+
+                DoRuntimeConversion(C, paramType.toBasicType(), C.lastVal);
+                args.add(C.lastVal);
+            }
+        }
+        C.needLoad.ascend();
+
         C.addAndUpdate(new IRInstCall(funcName, funcType, args));
         return null;
     }
@@ -845,6 +865,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         C.inCond = true;
         ctx.cond().accept(this);
         C.inCond = false;
+        DoRuntimeBoolConversion(C, C.lastVal);
         IRVal cond = C.lastVal;
 
         // 2. add BR
@@ -908,6 +929,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         C.inCond = true;
         ctx.cond().accept(this);
         C.inCond = false;
+        DoRuntimeBoolConversion(C, C.lastVal);
         IRVal cond = C.lastVal;
         C.addAndUpdate(new IRInstBr(cond, bodyBB, afterBB));
 
@@ -980,13 +1002,8 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         IRVal right = C.lastVal;
         C.needLoad.ascend();
 
-        boolean isConst = C.isConst.get() || ((left instanceof IRValConst) && (right instanceof IRValConst));
+        DoRuntimeCalculation(C, left, right, mathOP);
 
-        if (isConst) {
-            C.lastVal = DoCompileTimeCalculation((IRValConst) left, (IRValConst) right, mathOP);
-        } else {
-            C.lastVal = C.addInst(new IRInstMath(mathOP, left, right));
-        }
         return null;
     }
 
@@ -1012,13 +1029,8 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         IRVal right = C.lastVal;
         C.needLoad.ascend();
 
-        boolean isConst = C.isConst.get() || ((left instanceof IRValConst) && (right instanceof IRValConst));
+        DoRuntimeCalculation(C, left, right, mathOP);
 
-        if (isConst) {
-            C.lastVal = DoCompileTimeCalculation((IRValConst) left, (IRValConst) right, mathOP);
-        } else {
-            C.lastVal = C.addInst(new IRInstMath(mathOP, left, right));
-        }
         return null;
     }
 
@@ -1059,7 +1071,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
             }
             case NOT -> {
                 var zero = IRValConst.Zero(atomType);
-                C.addAndUpdate(IRInstCmpFactory.createCmpInst(IRInstIcmp.IcmpOp.EQ, val, zero, atomType));
+                DoRuntimeComparison(C, zero, val, IRInstIcmp.IcmpOp.EQ);
             }
         }
         return null;
@@ -1510,5 +1522,18 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
     public Void visitBlockStmt(SylangParser.BlockStmtContext ctx) {
         visitChildren(ctx);
         return null;
+    }
+
+    /*                 EXCEPTION     HANDLING                     */
+    @Override
+    public Void visitChildren(RuleNode node) {
+        if (node instanceof ParserRuleContext) {
+            CompileException.curLineNo = ((ParserRuleContext) node).getStart().getLine();
+            CompileException.curColNo = ((ParserRuleContext) node).getStart().getCharPositionInLine();
+        } else if (node instanceof TerminalNode) {
+            CompileException.curLineNo = ((TerminalNode) node).getSymbol().getLine();
+            CompileException.curColNo = ((TerminalNode) node).getSymbol().getCharPositionInLine();
+        }
+        return super.visitChildren(node);
     }
 }

@@ -39,6 +39,9 @@ public class Renamer {
     }
 
     public String getNextLocalRepeatName(String originalName) {
-        return "v."+originalName+"."+constCnt++;
+        if (originalName.startsWith("%")) {
+            return originalName + "." + constCnt++;
+        }
+        return "v." + originalName + "." + constCnt++;
     }
 }

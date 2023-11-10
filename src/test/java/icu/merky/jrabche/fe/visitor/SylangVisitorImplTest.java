@@ -31,9 +31,9 @@
 
 package icu.merky.jrabche.fe.visitor;
 
-import icu.merky.jrabche.helper.ConstInitList;
 import icu.merky.jrabche.fe.parser.SylangLexer;
 import icu.merky.jrabche.fe.parser.SylangParser;
+import icu.merky.jrabche.helper.ConstInitList;
 import icu.merky.jrabche.llvmir.IRBuilder;
 import icu.merky.jrabche.llvmir.IRBuilderImpl;
 import icu.merky.jrabche.llvmir.TestBuilder;
@@ -50,6 +50,21 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SylangVisitorImplTest {
+
+    public static VisitorContext getVisitorContext(String program) throws NoSuchFieldException, IllegalAccessException {
+        return getVisitorContext(program, new IRBuilderImpl());
+    }
+
+    public static VisitorContext getVisitorContext(String program, IRBuilder builder) throws NoSuchFieldException, IllegalAccessException {
+        SylangVisitorImpl visitor = new SylangVisitorImpl(builder);
+        Field c = SylangVisitorImpl.class.getDeclaredField("C");
+        c.setAccessible(true);
+        VisitorContext C = (VisitorContext) c.get(visitor);
+        var parser = new SylangParser(new BufferedTokenStream(new SylangLexer(CharStreams.fromString(program))));
+        var tree = parser.compUnit();
+        tree.accept(visitor);
+        return C;
+    }
 
     @Test
     void visitInitList1() {
@@ -93,9 +108,10 @@ class SylangVisitorImplTest {
         var parser = new SylangParser(new BufferedTokenStream(new SylangLexer(CharStreams.fromString(program))));
         var tree = parser.number();
         tree.accept(visitor);
-        var n=(IRValConstFloat) visitor.C.lastVal;
+        var n = (IRValConstFloat) visitor.C.lastVal;
         assertEquals(355.75, n.getValue());
     }
+
     @Test
     void visitHexFloatConst2() throws NoSuchFieldException, IllegalAccessException {
         String program = "0x1.1p1";
@@ -107,9 +123,10 @@ class SylangVisitorImplTest {
         var parser = new SylangParser(new BufferedTokenStream(new SylangLexer(CharStreams.fromString(program))));
         var tree = parser.number();
         tree.accept(visitor);
-        var n=(IRValConstFloat) C.lastVal;
+        var n = (IRValConstFloat) C.lastVal;
         assertEquals(2.125, n.getValue());
     }
+
     @Test
     void visitConstDef1() throws NoSuchFieldException, IllegalAccessException {
         String program = "const int a=14;";
@@ -151,16 +168,17 @@ class SylangVisitorImplTest {
         assertEquals(2, aVal.getValTypes().size());
         assertNull(aVal.getChildVals().get(0));
         assertNull(aVal.getChildVals().get(1));
-        var elem = aVal.get(List.of(0,0));
+        var elem = aVal.get(List.of(0, 0));
         assertInstanceOf(IRValConstInt.class, elem);
         assertEquals(1, ((IRValConstInt) elem).getValue());
-        elem = aVal.get(List.of(0,1));
+        elem = aVal.get(List.of(0, 1));
         assertInstanceOf(IRValConstInt.class, elem);
         assertEquals(2, ((IRValConstInt) elem).getValue());
-        elem = aVal.get(List.of(1,2));
+        elem = aVal.get(List.of(1, 2));
         assertInstanceOf(IRValConstInt.class, elem);
         assertEquals(6, ((IRValConstInt) elem).getValue());
     }
+
     @Test
     void visitVarDef1() throws NoSuchFieldException, IllegalAccessException {
         String program = "int apple=3;";
@@ -195,7 +213,7 @@ class SylangVisitorImplTest {
         val = ((IRValGlobal) val).getValue();
         assertInstanceOf(IRValArray.class, val);
         var aVal = (IRValArray) val;
-        assertEquals(IRBasicType.INT, ((ArrayType)aVal.getType()).getAtomType());
+        assertEquals(IRBasicType.INT, ((ArrayType) aVal.getType()).getAtomType());
         assertEquals(3, aVal.getShapes().get(0));
         assertEquals(1, aVal.getShapes().size());
         assertEquals(3, aVal.getValTypes().size());
@@ -240,19 +258,5 @@ class SylangVisitorImplTest {
         System.out.println(funcString);
 
         assertNotNull(C.queryFunctionType("main"));
-    }
-
-    public static VisitorContext getVisitorContext(String program) throws NoSuchFieldException, IllegalAccessException {
-        return getVisitorContext(program,new IRBuilderImpl());
-    }
-    public static VisitorContext getVisitorContext(String program, IRBuilder builder) throws NoSuchFieldException, IllegalAccessException {
-        SylangVisitorImpl visitor = new SylangVisitorImpl(builder);
-        Field c = SylangVisitorImpl.class.getDeclaredField("C");
-        c.setAccessible(true);
-        VisitorContext C = (VisitorContext) c.get(visitor);
-        var parser = new SylangParser(new BufferedTokenStream(new SylangLexer(CharStreams.fromString(program))));
-        var tree = parser.compUnit();
-        tree.accept(visitor);
-        return C;
     }
 }

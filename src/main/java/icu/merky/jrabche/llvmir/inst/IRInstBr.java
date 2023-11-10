@@ -36,45 +36,49 @@ import icu.merky.jrabche.llvmir.types.VoidType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
 public class IRInstBr extends IRInst {
-    IRBasicBlock trueBB,falseBB;
+    IRBasicBlock trueBB, falseBB;
     IRVal cond;
+
     public IRInstBr(IRVal cond, IRBasicBlock trueBB, IRBasicBlock falseBB) {
         super(InstID.BrInst, new VoidType());
-        this.cond=cond;
+        this.cond = cond;
         this.trueBB = trueBB;
         this.falseBB = falseBB;
     }
+
     public IRInstBr(IRBasicBlock trueBB) {
         super(InstID.BrInst, new VoidType());
         this.trueBB = trueBB;
         this.falseBB = null;
-        this.cond=null;
+        this.cond = null;
     }
+
     @Override
     public String toString() {
-        if(cond==null){
-            //br label %L1
-            return "br label %"+trueBB.getName();
+        if (cond == null) {
+            // br label %L1
+            return "br label %" + trueBB.getName();
         }
-        //br i1 %v8, label %L1, label %L2
-        return "br i1 "+cond.asValue()+", label %"+trueBB.getName()+", label %"+falseBB.getName();
+        // br i1 %v8, label %L1, label %L2
+        return "br i1 " + cond.asValue() + ", label %" + trueBB.getName() + ", label %" + falseBB.getName();
     }
 
     @Override
     public boolean replace(IRVal inst, IRVal newInst) {
-        if(cond==inst){
-            cond=newInst;
+        if (cond == inst) {
+            cond = newInst;
             return true;
         }
         return false;
     }
-    public boolean replaceBasicBlock(IRBasicBlock old, IRBasicBlock newBB){
-        if(trueBB==old){
-            trueBB=newBB;
+
+    public boolean replaceBasicBlock(IRBasicBlock old, IRBasicBlock newBB) {
+        if (trueBB == old) {
+            trueBB = newBB;
             return true;
         }
-        if(falseBB==old){
-            falseBB=newBB;
+        if (falseBB == old) {
+            falseBB = newBB;
             return true;
         }
         return false;

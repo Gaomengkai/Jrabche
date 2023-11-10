@@ -2,6 +2,8 @@ package icu.merky.jrabche.llvmir.values;
 
 import icu.merky.jrabche.llvmir.types.FloatType;
 
+import java.math.BigInteger;
+
 public class IRValConstFloat extends IRValConst implements Wordzation {
     protected float value;
 
@@ -18,11 +20,10 @@ public class IRValConstFloat extends IRValConst implements Wordzation {
         this((float) value);
     }
 
-    public IRValConstFloat(long value) {
-        this();
+    static public IRValConstFloat FromHexBits(long value) {
         // ((float)*reinterpret_cast<double*>(&value_))
         double v = Double.longBitsToDouble(value);
-        this.value = (float) v;
+        return new IRValConstFloat((float) v);
     }
 
     public float getValue() {
@@ -43,7 +44,12 @@ public class IRValConstFloat extends IRValConst implements Wordzation {
 
     @Override
     public String asValue() {
-        return "0x"+Double.doubleToLongBits(value);
+        long lNum = Double.doubleToLongBits(value);
+        BigInteger bigInteger = BigInteger.valueOf(lNum);
+        if (bigInteger.compareTo(BigInteger.ZERO) < 0) {
+            bigInteger = bigInteger.add(BigInteger.ONE.shiftLeft(64));
+        }
+        return "0x" + bigInteger.toString(16);
     }
 
     @Override
