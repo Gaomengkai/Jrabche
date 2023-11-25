@@ -1,8 +1,8 @@
 package icu.merky.jrabche.llvmir.values;
 
 import icu.merky.jrabche.exceptions.NotImplementedException;
-import icu.merky.jrabche.helper.ConstInitList;
-import icu.merky.jrabche.helper.Helper;
+import icu.merky.jrabche.fe.helper.ConstInitList;
+import icu.merky.jrabche.fe.helper.FEVisitorHelper;
 import icu.merky.jrabche.llvmir.types.ArrayType;
 import icu.merky.jrabche.llvmir.types.IRBasicType;
 import icu.merky.jrabche.llvmir.types.IRType;
@@ -212,15 +212,15 @@ public class IRValConstArray extends IRValConst {
             for (int i = 0; i < val.witch.size(); i++) {
                 if (val.witch.get(i) == ConstInitList.ILType.CV) {
                     var cVal = val.constVals.get(pVal++);
-                    cVal = Helper.DoCompileTimeConversion(basicType, cVal);
+                    cVal = FEVisitorHelper.DoCompileTimeConversion(basicType, cVal);
                     arr.set(pos, cVal);
-                    Helper.ArrayPosPlusN(shape, pos, 1, -1);
+                    FEVisitorHelper.ArrayPosPlusN(shape, pos, 1, -1);
                 } else {
                     int before = pos.get(d);
                     var il = val.initLists.get(pArr++);
                     gen(il, pos, d + 1);
                     if (before == pos.get(d)) {
-                        Helper.ArrayPosPlusN(shape, pos, 1, d);
+                        FEVisitorHelper.ArrayPosPlusN(shape, pos, 1, d);
                     }
                 }
             }

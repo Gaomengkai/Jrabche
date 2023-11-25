@@ -29,7 +29,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.helper;
+package icu.merky.jrabche.fe.helper;
 
 import icu.merky.jrabche.fe.visitor.VisitorContext;
 import icu.merky.jrabche.llvmir.inst.IRInstCmpFactory;
@@ -42,7 +42,7 @@ import icu.merky.jrabche.llvmir.values.*;
 
 import java.util.List;
 
-public class Helper {
+public class FEVisitorHelper {
     public static int GetIntNumFromCVal(IRValConst lastVal) {
         if (lastVal instanceof IRValConstInt intVal) {
             return intVal.getValue();

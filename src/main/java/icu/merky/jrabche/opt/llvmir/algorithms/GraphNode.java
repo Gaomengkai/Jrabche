@@ -29,42 +29,63 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.llvmir.inst;
+package icu.merky.jrabche.opt.llvmir.algorithms;
 
-import icu.merky.jrabche.llvmir.types.IRType;
-import icu.merky.jrabche.llvmir.values.IRVal;
-
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Set;
 
-public class IRInstBitCast extends IRInst {
-    private IRVal val;
+public class GraphNode<T> {
+    T val;
+    private Set<GraphNode<T>> successors;
 
-    public IRInstBitCast(IRVal val, IRType toType) {
-        super(InstID.BitCastInst, toType);
+
+    private Set<GraphNode<T>> predecessor;
+
+    public GraphNode(T val) {
         this.val = val;
+        successors = new HashSet<>();
+        predecessor = new HashSet<>();
+    }
+
+    public static <T> void BuildPredecessor(GraphNode<T> root) {
+        Queue<GraphNode<T>> q = new LinkedList<>();
+        Set<GraphNode<T>> visited = new HashSet<>();
+        q.add(root);
+        while (!q.isEmpty()) {
+            GraphNode<T> cur = q.poll();
+            if (visited.contains(cur)) continue;
+            visited.add(cur);
+            for (var s : cur.getSuccessors()) {
+                s.predecessor.add(cur);
+                q.add(s);
+            }
+        }
+    }
+
+    void addSuccessor(GraphNode<T> child) {
+        successors.add(child);
+    }
+
+    void removeSuccessor(GraphNode<T> child) {
+        successors.remove(child);
+    }
+
+    public Set<GraphNode<T>> getSuccessors() {
+        return successors;
+    }
+
+    public Set<GraphNode<T>> getPredecessors() {
+        return predecessor;
+    }
+
+    public T getVal() {
+        return val;
     }
 
     @Override
     public String toString() {
-        return String.format("%s = bitcast %s %s to %s", name, val.getType(), val.asValue(), getType());
-    }
-
-    @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (val == inst) {
-            val = newInst;
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public String asValue() {
-        return name;
-    }
-
-    @Override
-    public Set<IRVal> getUses() {
-        return Set.of(val);
+        return val.toString();
     }
 }

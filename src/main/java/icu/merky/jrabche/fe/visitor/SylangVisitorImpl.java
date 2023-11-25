@@ -33,10 +33,10 @@ package icu.merky.jrabche.fe.visitor;
 
 import icu.merky.jrabche.exceptions.CompileException;
 import icu.merky.jrabche.exceptions.NotImplementedException;
+import icu.merky.jrabche.fe.helper.ConstInitList;
+import icu.merky.jrabche.fe.helper.FEVisitorHelper;
 import icu.merky.jrabche.fe.parser.SylangParser;
 import icu.merky.jrabche.fe.parser.SylangVisitor;
-import icu.merky.jrabche.helper.ConstInitList;
-import icu.merky.jrabche.helper.Helper;
 import icu.merky.jrabche.llvmir.IRBuilder;
 import icu.merky.jrabche.llvmir.inst.*;
 import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
@@ -54,7 +54,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static icu.merky.jrabche.helper.Helper.*;
+import static icu.merky.jrabche.fe.helper.FEVisitorHelper.*;
 
 public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements SylangVisitor<Void> {
     public final VisitorContext C;
@@ -174,7 +174,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
 
         if (shape.isEmpty()) {
             // scalar
-            IRValConst converted = Helper.DoCompileTimeConversion(atomType, initVal);
+            IRValConst converted = FEVisitorHelper.DoCompileTimeConversion(atomType, initVal);
             C.pushConst(name, converted);
         } else {
             // array
@@ -317,7 +317,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
                 // scalar
                 if (ctx.initVal() != null) {
                     ctx.initVal().accept(this);
-                    IRValConst converted = Helper.DoCompileTimeConversion(atomType, C.lastVal);
+                    IRValConst converted = FEVisitorHelper.DoCompileTimeConversion(atomType, C.lastVal);
                     C.pushVar(name, converted);
                 } else {
                     C.pushVar(name, IRValConstInt.Zero(C.bType.toBasicType()));

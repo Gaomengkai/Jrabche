@@ -31,9 +31,9 @@
 
 package icu.merky.jrabche.fe.visitor;
 
+import icu.merky.jrabche.fe.helper.ConstInitList;
 import icu.merky.jrabche.fe.parser.SylangLexer;
 import icu.merky.jrabche.fe.parser.SylangParser;
-import icu.merky.jrabche.helper.ConstInitList;
 import icu.merky.jrabche.llvmir.IRBuilder;
 import icu.merky.jrabche.llvmir.IRBuilderImpl;
 import icu.merky.jrabche.llvmir.TestBuilder;
@@ -49,7 +49,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class SylangVisitorImplTest {
+public class SylangVisitorImplTest {
 
     public static VisitorContext getVisitorContext(String program) throws NoSuchFieldException, IllegalAccessException {
         return getVisitorContext(program, new IRBuilderImpl());

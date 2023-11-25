@@ -33,8 +33,10 @@ package icu.merky.jrabche.llvmir.structures.impl;
 
 import icu.merky.jrabche.exceptions.NotImplementedException;
 import icu.merky.jrabche.fe.visitor.FPType;
+import icu.merky.jrabche.llvmir.StaticVariableCounter;
 import icu.merky.jrabche.llvmir.inst.IRInst;
 import icu.merky.jrabche.llvmir.inst.IRInstAlloca;
+import icu.merky.jrabche.llvmir.inst.IRInstBr;
 import icu.merky.jrabche.llvmir.inst.IRInstReturn;
 import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
 import icu.merky.jrabche.llvmir.structures.IRFunction;
@@ -44,11 +46,7 @@ import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.values.IRValConst;
 import icu.merky.jrabche.llvmir.values.IRValFP;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.*;
 
 public class IRFunctionImpl implements IRFunction {
     FunctionType functionType;
@@ -64,13 +62,12 @@ public class IRFunctionImpl implements IRFunction {
      */
     Map<String, IRValFP> fp = new LinkedHashMap<>();
 
-    AtomicInteger counter = new AtomicInteger(0);
 
     public IRFunctionImpl(String name, FunctionType functionType) {
         this.functionType = functionType;
         entryBB = new IRBasicBlockImpl();
         entryBB.setName("entry");
-        this.bbs = new ArrayList<>();
+        this.bbs = new LinkedList<>();
         this.alloca = new ArrayList<>();
         bbs.add(entryBB);
         curBB = entryBB;
@@ -165,6 +162,11 @@ public class IRFunctionImpl implements IRFunction {
     }
 
     @Override
+    public void removeBlock(IRBasicBlock block) {
+        bbs.remove(block);
+    }
+
+    @Override
     public IRInstAlloca addAlloca(IRInstAlloca inst) {
         alloca.add(inst);
         return inst;
@@ -186,14 +188,14 @@ public class IRFunctionImpl implements IRFunction {
 
         // 1. fp
         for (Map.Entry<String, IRValFP> entry : fp.entrySet()) {
-            int count = counter.getAndIncrement();
+            int count = StaticVariableCounter.getAndIncrement();
             entry.getValue().setName("a." + count);
         }
         // 2. unnamed
         for (IRBasicBlock bb : bbs) {
-            for (IRInst irInst : bb.getInst()) {
+            for (IRInst irInst : bb.getInsts()) {
                 if (irInst.getName() == null && irInst.needName()) {
-                    int count = counter.getAndIncrement();
+                    int count = StaticVariableCounter.getAndIncrement();
                     irInst.setName("v." + count);
                 }
             }
@@ -212,6 +214,8 @@ public class IRFunctionImpl implements IRFunction {
         for (IRBasicBlock bb : bbs) {
             bb.chunkAfterTerminator();
         }
+        // 5. interlinked bb
+        BuildBBGraph(this);
     }
 
     @Override
@@ -228,5 +232,24 @@ public class IRFunctionImpl implements IRFunction {
         bbs.stream().map(Object::toString).forEach(sb::append);
         sb.append("}\n");
         return sb.toString();
+    }
+
+    public static void BuildBBGraph(IRFunction F) {
+        for (var bb : F.getBlocks()) {
+            bb.getPre().clear();
+            bb.getSuc().clear();
+        }
+        for (var bb : F.getBlocks()) {
+            if (bb.getTerminator() instanceof IRInstBr br) {
+                var target1 = br.getTrueBB();
+                bb.addNext(target1);
+                target1.getPre().add(bb);
+                var target2 = br.getFalseBB();
+                if (target2 != null) {
+                    bb.getSuc().add(target2);
+                    target2.getPre().add(bb);
+                }
+            }
+        }
     }
 }

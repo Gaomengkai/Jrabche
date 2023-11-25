@@ -29,42 +29,47 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.llvmir.inst;
+package icu.merky.jrabche.llvmir.support;
 
-import icu.merky.jrabche.llvmir.types.IRType;
+import icu.merky.jrabche.llvmir.inst.IRInst;
+import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
-import java.util.Set;
+import java.util.Iterator;
 
-public class IRInstBitCast extends IRInst {
-    private IRVal val;
-
-    public IRInstBitCast(IRVal val, IRType toType) {
-        super(InstID.BitCastInst, toType);
-        this.val = val;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%s = bitcast %s %s to %s", name, val.getType(), val.asValue(), getType());
-    }
-
-    @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (val == inst) {
-            val = newInst;
-            return true;
+public class InstUtil {
+    /**
+     * Replace all uses of an instruction with a new value
+     * <br>
+     * e.g.: <code>%v1 = load i32, ptr %v2<br>%v3 = add i32 ...,<b>%v1</b></code>
+     * <br>
+     * <code>ReplaceAllUsesWith(%v1, %v2)</code>
+     * <br>
+     * will result in:
+     * <br>
+     * <code>%v3 = add i32 ...,<b>%v2</b></code>
+     *
+     * @param inst   the instruction to be replaced
+     * @param newVal the new value to replace the instruction
+     * @return whether the instruction is replaced
+     */
+    public static boolean ReplaceAllUsesWith(IRInst inst, IRVal newVal) {
+        boolean changed = false;
+        for (IRInst user : inst.getUsedBy()) {
+            changed |= user.replace(inst, newVal);
         }
-        return false;
+        return changed;
     }
 
-    @Override
-    public String asValue() {
-        return name;
-    }
-
-    @Override
-    public Set<IRVal> getUses() {
-        return Set.of(val);
+    public static boolean RemoveDeletedInstructions(IRBasicBlock bb) {
+        boolean changed = false;
+        for (Iterator<IRInst> it = bb.getInsts().iterator(); it.hasNext(); ) {
+            var inst = it.next();
+            if (inst.isDeleted()) {
+                it.remove();
+                changed = true;
+            }
+        }
+        return changed;
     }
 }

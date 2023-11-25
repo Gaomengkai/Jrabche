@@ -34,6 +34,8 @@ package icu.merky.jrabche.llvmir.inst;
 import icu.merky.jrabche.llvmir.types.IRBasicType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
+import java.util.Set;
+
 public class IRInstReturn extends IRInst {
     IRVal opVal;
 
@@ -70,6 +72,11 @@ public class IRInstReturn extends IRInst {
     @Override
     public String asValue() {
         return name;
+    }
+
+    @Override
+    public Set<IRVal> getUses() {
+        return opVal == null ? Set.of() : Set.of(opVal);
     }
 }
 

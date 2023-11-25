@@ -36,7 +36,9 @@ import icu.merky.jrabche.llvmir.types.InvalidType;
 import icu.merky.jrabche.llvmir.types.PointerType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static icu.merky.jrabche.llvmir.types.PointerType.MakePointer;
 
@@ -117,5 +119,12 @@ public class IRInstGEP extends IRInst {
     @Override
     public String asValue() {
         return name;
+    }
+
+    @Override
+    public Set<IRVal> getUses() {
+        var res = new HashSet<>(indices);
+        res.add(ptr);
+        return res;
     }
 }

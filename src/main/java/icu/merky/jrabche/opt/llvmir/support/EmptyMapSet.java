@@ -29,42 +29,85 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.llvmir.inst;
+package icu.merky.jrabche.opt.llvmir.support;
 
-import icu.merky.jrabche.llvmir.types.IRType;
-import icu.merky.jrabche.llvmir.values.IRVal;
+import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
-public class IRInstBitCast extends IRInst {
-    private IRVal val;
+public class EmptyMapSet<K, V> implements Map<K, Set<V>> {
+    Map<K, Set<V>> originalMap;
 
-    public IRInstBitCast(IRVal val, IRType toType) {
-        super(InstID.BitCastInst, toType);
-        this.val = val;
+    public EmptyMapSet(Map<K, Set<V>> originalMap) {
+        this.originalMap = originalMap;
     }
 
     @Override
-    public String toString() {
-        return String.format("%s = bitcast %s %s to %s", name, val.getType(), val.asValue(), getType());
+    public int size() {
+        return originalMap.size();
     }
 
     @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (val == inst) {
-            val = newInst;
-            return true;
+    public boolean isEmpty() {
+        return originalMap.isEmpty();
+    }
+
+    @Override
+    public boolean containsKey(Object key) {
+        return originalMap.containsKey(key);
+    }
+
+    @Override
+    public boolean containsValue(Object value) {
+        return originalMap.containsValue(value);
+    }
+
+    @Override
+    public Set<V> get(Object key) {
+        if (originalMap.containsKey(key)) {
+            return originalMap.get(key);
+        } else {
+            return Set.of();
         }
-        return false;
     }
 
     @Override
-    public String asValue() {
-        return name;
+    public Set<V> put(K key, Set<V> value) {
+        return this.originalMap.put(key, value);
     }
 
     @Override
-    public Set<IRVal> getUses() {
-        return Set.of(val);
+    public Set<V> remove(Object key) {
+        return this.originalMap.remove(key);
+    }
+
+    @Override
+    public void putAll(@NotNull Map<? extends K, ? extends Set<V>> m) {
+        this.originalMap.putAll(m);
+    }
+
+    @Override
+    public void clear() {
+        this.originalMap.clear();
+    }
+
+    @NotNull
+    @Override
+    public Set<K> keySet() {
+        return this.originalMap.keySet();
+    }
+
+    @NotNull
+    @Override
+    public Collection<Set<V>> values() {
+        return this.originalMap.values();
+    }
+
+    @NotNull
+    @Override
+    public Set<Entry<K, Set<V>>> entrySet() {
+        return this.originalMap.entrySet();
     }
 }

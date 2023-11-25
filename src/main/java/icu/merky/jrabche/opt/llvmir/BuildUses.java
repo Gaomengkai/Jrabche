@@ -29,42 +29,45 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.llvmir.inst;
+package icu.merky.jrabche.opt.llvmir;
 
-import icu.merky.jrabche.llvmir.types.IRType;
+import icu.merky.jrabche.llvmir.inst.IRInst;
+import icu.merky.jrabche.llvmir.structures.IRFunction;
 import icu.merky.jrabche.llvmir.values.IRVal;
+import icu.merky.jrabche.opt.llvmir.annotations.PassOn;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
-public class IRInstBitCast extends IRInst {
-    private IRVal val;
+@PassOn(PassOn.on.FUNCTION)
+public class BuildUses implements IRPass {
+    IRFunction F;
 
-    public IRInstBitCast(IRVal val, IRType toType) {
-        super(InstID.BitCastInst, toType);
-        this.val = val;
+    public BuildUses(IRFunction function) {
+        F = function;
     }
 
     @Override
-    public String toString() {
-        return String.format("%s = bitcast %s %s to %s", name, val.getType(), val.asValue(), getType());
-    }
-
-    @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (val == inst) {
-            val = newInst;
-            return true;
+    public boolean go() {
+        Map<IRVal, Set<IRInst>> uses = new HashMap<>();
+        for (var B : F.getBlocks()) {
+            for (var inst : B.getInsts()) {
+                for (var op : inst.getUses()) {
+                    if (!uses.containsKey(op)) {
+                        uses.put(op, new HashSet<>(Set.of(inst)));
+                    } else {
+                        uses.get(op).add(inst);
+                    }
+                }
+            }
+        }
+        for (var B : F.getBlocks()) {
+            for (var inst : B.getInsts()) {
+                inst.getUsedBy().addAll(uses.getOrDefault(inst, Set.of()));
+            }
         }
         return false;
-    }
-
-    @Override
-    public String asValue() {
-        return name;
-    }
-
-    @Override
-    public Set<IRVal> getUses() {
-        return Set.of(val);
     }
 }

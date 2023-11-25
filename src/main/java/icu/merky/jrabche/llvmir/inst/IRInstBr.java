@@ -34,6 +34,9 @@ package icu.merky.jrabche.llvmir.inst;
 import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
 import icu.merky.jrabche.llvmir.types.VoidType;
 import icu.merky.jrabche.llvmir.values.IRVal;
+import icu.merky.jrabche.llvmir.values.IRValConstBool;
+
+import java.util.Set;
 
 public class IRInstBr extends IRInst {
     IRBasicBlock trueBB, falseBB;
@@ -42,8 +45,18 @@ public class IRInstBr extends IRInst {
     public IRInstBr(IRVal cond, IRBasicBlock trueBB, IRBasicBlock falseBB) {
         super(InstID.BrInst, new VoidType());
         this.cond = cond;
-        this.trueBB = trueBB;
-        this.falseBB = falseBB;
+        if (cond instanceof IRValConstBool boolVal) {
+            if (boolVal.getValue() != 0) {
+                this.trueBB = trueBB;
+            } else {
+                this.trueBB = falseBB;
+            }
+            this.falseBB = null;
+            this.cond = null;
+        } else {
+            this.trueBB = trueBB;
+            this.falseBB = falseBB;
+        }
     }
 
     public IRInstBr(IRBasicBlock trueBB) {
@@ -84,8 +97,25 @@ public class IRInstBr extends IRInst {
         return false;
     }
 
+    public IRBasicBlock getTrueBB() {
+        return trueBB;
+    }
+
+    public IRBasicBlock getFalseBB() {
+        return falseBB;
+    }
+
+    public IRVal getCond() {
+        return cond;
+    }
+
     @Override
     public String asValue() {
         return null;
+    }
+
+    @Override
+    public Set<IRVal> getUses() {
+        return cond == null ? Set.of() : Set.of(cond);
     }
 }

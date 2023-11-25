@@ -35,9 +35,12 @@ import icu.merky.jrabche.llvmir.types.FloatType;
 import icu.merky.jrabche.llvmir.types.IntType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
+import java.util.Set;
+
 public class IRInstUnary extends IRInst {
     UnaryOP unaryOP;
     IRVal v1;
+
     public IRInstUnary(UnaryOP unaryOP, IRVal v1) {
         super(null, InstID.ConvertInst, unaryOP == UnaryOP.SiToFp ? new FloatType() : new IntType());
         this.unaryOP = unaryOP;
@@ -70,6 +73,11 @@ public class IRInstUnary extends IRInst {
     @Override
     public String asValue() {
         return name;
+    }
+
+    @Override
+    public Set<IRVal> getUses() {
+        return Set.of(v1);
     }
 
     public enum UnaryOP {

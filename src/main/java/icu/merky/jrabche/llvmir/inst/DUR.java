@@ -29,21 +29,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.opt;
+package icu.merky.jrabche.llvmir.inst;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import icu.merky.jrabche.llvmir.values.IRVal;
 
-@Retention(RetentionPolicy.RUNTIME)
-public @interface OptOn {
-    OptOnEnum value();
+import java.util.Set;
 
-    // target must implement the corresponding optimizer interface
-    boolean ssa() default false;
+public interface DUR extends Replaceable {
+    /**
+     * @return 这条指令引用了哪些值
+     */
+    Set<IRVal> getUses();
 
-    Class<?>[] afterWhich() default {};
-
-    boolean changeSSA() default false;
-
-    enum OptOnEnum {Module, Function, BasicBlock, Instruction}
+    /**
+     * @return 这条指令被哪些指令引用
+     */
+    Set<IRInst> getUsedBy();
 }

@@ -29,13 +29,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.opt;
+package icu.merky.jrabche.opt.llvmir;
 
-import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
-
-@OptOn(value = OptOn.OptOnEnum.BasicBlock, afterWhich = {})
-public class ExampleBBOpt2 {
-    public ExampleBBOpt2(IRBasicBlock block) {
-        System.out.println("Opt2 must before Opt1");
-    }
+public interface IRPass {
+    boolean go();
 }

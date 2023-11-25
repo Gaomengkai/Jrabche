@@ -29,19 +29,51 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.opt;
+package icu.merky.jrabche.opt.llvmir;
 
-import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
+import icu.merky.jrabche.llvmir.inst.IRInst;
+import icu.merky.jrabche.llvmir.inst.IRInstAlloca;
+import icu.merky.jrabche.llvmir.structures.IRFunction;
+import icu.merky.jrabche.opt.llvmir.annotations.DisabledOpt;
+import icu.merky.jrabche.opt.llvmir.annotations.OptOn;
 
-import static icu.merky.jrabche.opt.OptOn.OptOnEnum.BasicBlock;
+import java.util.BitSet;
+import java.util.HashSet;
+import java.util.Set;
 
-@OptOn(value = BasicBlock, afterWhich = {ExampleBBOpt2.class})
-public class ExampleBlockOptimizer {
-    public ExampleBlockOptimizer(IRBasicBlock block) {
-        optimize(block);
+@OptOn(value = OptOn.OptOnEnum.Function, name = "Dead Code Elimination v1", ssa = false, afterWhich = {IROptRLSE.class})
+@DisabledOpt
+public class IROptDCE implements IROpt {
+
+    private final IRFunction F;
+
+    public IROptDCE(IRFunction f) {
+        F = f;
     }
 
-    public void optimize(IRBasicBlock block) {
-        System.out.print("Optimizing block on ssa \n");
+    @Override
+    public boolean go() {
+        // optimized for scala alloca, temp reg, etc.
+        // not optimized for array, struct, etc.
+        Set<IRInstAlloca> allocaSet = new HashSet<>();
+        for (var I : F.entryBB().getInsts()) {
+            if (I instanceof IRInstAlloca) {
+                allocaSet.add((IRInstAlloca) I);
+            } else break;
+        }
+        Set<IRInst> sideEff = new HashSet<>();
+        for (var B : F.getBlocks()) {
+            for (var I : B.getInsts()) {
+                if (I.isCallInst() || I.isBrInst() || I.isReturnInst()) {
+                    for (var U : I.getUses()) {
+                        if (U instanceof IRInst inst) sideEff.add(inst);
+                    }
+                }
+            }
+        }
+        BitSet live = new BitSet();
+        int i = 0;
+
+        return false;
     }
 }

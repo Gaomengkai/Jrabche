@@ -29,13 +29,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.opt;
+package icu.merky.jrabche.opt.llvmir;
 
-import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
-
-@OptOn(value = OptOn.OptOnEnum.BasicBlock, afterWhich = {ExampleBBOpt2.class})
-public class ExampleBBOpt3 {
-    public ExampleBBOpt3(IRBasicBlock b) {
-        System.out.println("Opt3 must after Opt2");
+public interface IROpt extends IRPass {
+    default boolean optimize() {
+        return go();
     }
 }

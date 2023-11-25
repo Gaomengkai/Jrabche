@@ -31,40 +31,69 @@
 
 package icu.merky.jrabche.llvmir.inst;
 
+import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
 import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.values.IRVal;
+import org.antlr.v4.runtime.misc.Pair;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
-public class IRInstBitCast extends IRInst {
-    private IRVal val;
+public class IRInstPhi extends IRInst {
+    // List<Pair<IRVal, IRBasicBlock>> incoming;
 
-    public IRInstBitCast(IRVal val, IRType toType) {
-        super(InstID.BitCastInst, toType);
-        this.val = val;
+    Map<IRBasicBlock, IRVal> incoming;
+
+    public IRInstPhi(IRType valType) {
+        super(InstID.PhiInst, valType);
+        incoming = new HashMap<>();
+    }
+
+    public void addIncoming(IRVal val, IRBasicBlock block) {
+        incoming.put(block, val);
+    }
+
+    public void addIncoming(Pair<IRVal, IRBasicBlock> pair) {
+        incoming.put(pair.b, pair.a);
+    }
+
+
+    public Map<IRBasicBlock, IRVal> getIncoming() {
+        return incoming;
     }
 
     @Override
     public String toString() {
-        return String.format("%s = bitcast %s %s to %s", name, val.getType(), val.asValue(), getType());
+        // %v1 = PHI i32 [ 0, %entry ], [ %v2, %if.then ]
+        StringBuilder sb = new StringBuilder();
+        if (name != null) sb.append(name).append(" = ");
+        sb.append("phi ").append(type.toString()).append(" ");
+        int i = 0;
+        for (var entry : incoming.entrySet()) {
+            sb.append("[ ").append(entry.getValue().asValue()).append(", ").append("%").append(entry.getKey().getName()).append(" ]");
+            if (i != incoming.size() - 1) {
+                sb.append(", ");
+            }
+            i++;
+        }
+        sb.delete(sb.length(), sb.length());
+        return sb.toString();
+    }
+
+    @Override
+    public Set<IRVal> getUses() {
+        // todo.
+        return Set.of();
     }
 
     @Override
     public boolean replace(IRVal inst, IRVal newInst) {
-        if (val == inst) {
-            val = newInst;
-            return true;
-        }
         return false;
     }
 
     @Override
     public String asValue() {
         return name;
-    }
-
-    @Override
-    public Set<IRVal> getUses() {
-        return Set.of(val);
     }
 }

@@ -33,6 +33,8 @@ public interface IRFunction {
 
     List<IRBasicBlock> getBlocks();
 
+    void removeBlock(IRBasicBlock block);
+
     IRInstAlloca addAlloca(IRInstAlloca inst);
 
     List<IRInstAlloca> getAlloca();

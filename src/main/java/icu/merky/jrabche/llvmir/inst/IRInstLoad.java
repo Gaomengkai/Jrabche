@@ -34,7 +34,13 @@ package icu.merky.jrabche.llvmir.inst;
 import icu.merky.jrabche.llvmir.types.PointerType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
+import java.util.Set;
+
 public class IRInstLoad extends IRInst {
+    public IRVal getFrom() {
+        return ptr;
+    }
+
     //     %v21 = load i32, i32* %v20
     private IRVal ptr;
 
@@ -57,11 +63,20 @@ public class IRInstLoad extends IRInst {
 
     @Override
     public boolean replace(IRVal inst, IRVal newInst) {
+        if (ptr == inst) {
+            ptr = newInst;
+            return true;
+        }
         return false;
     }
 
     @Override
     public String asValue() {
         return name;
+    }
+
+    @Override
+    public Set<IRVal> getUses() {
+        return Set.of(ptr);
     }
 }

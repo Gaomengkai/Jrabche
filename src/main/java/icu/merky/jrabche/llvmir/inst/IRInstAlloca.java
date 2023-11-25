@@ -35,6 +35,8 @@ import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.types.PointerType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
+import java.util.Set;
+
 import static icu.merky.jrabche.llvmir.types.PointerType.MakePointer;
 
 public class IRInstAlloca extends IRInst {
@@ -66,5 +68,10 @@ public class IRInstAlloca extends IRInst {
     @Override
     public String asValue() {
         return name;
+    }
+
+    @Override
+    public Set<IRVal> getUses() {
+        return Set.of();
     }
 }

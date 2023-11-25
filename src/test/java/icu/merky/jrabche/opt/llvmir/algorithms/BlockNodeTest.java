@@ -29,14 +29,49 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.opt;
+package icu.merky.jrabche.opt.llvmir.algorithms;
 
+import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
+import icu.merky.jrabche.llvmir.structures.impl.IRBasicBlockImpl;
 import org.junit.jupiter.api.Test;
 
-class TestVIROptExecutorTest {
+class BlockNodeTest {
+
     @Test
-    public void TestExecutor() {
-        var exec = new VIROptExecutor();
-        exec.run();
+    void buildBlockNodes() {
+        // 0: 1  ;1: 2,5  ;2: 3  ;3: 1,4  ;4:  ;5: 6,8  ;6: 7  ;7: 3  ;8: 7
+        IRBasicBlock b0 = new IRBasicBlockImpl();
+        b0.setName("0");
+        IRBasicBlock b1 = new IRBasicBlockImpl();
+        b1.setName("1");
+        IRBasicBlock b2 = new IRBasicBlockImpl();
+        b2.setName("2");
+        IRBasicBlock b3 = new IRBasicBlockImpl();
+        b3.setName("3");
+        IRBasicBlock b4 = new IRBasicBlockImpl();
+        b4.setName("4");
+        IRBasicBlock b5 = new IRBasicBlockImpl();
+        b5.setName("5");
+        IRBasicBlock b6 = new IRBasicBlockImpl();
+        b6.setName("6");
+        IRBasicBlock b7 = new IRBasicBlockImpl();
+        b7.setName("7");
+        IRBasicBlock b8 = new IRBasicBlockImpl();
+        b8.setName("8");
+        b0.addNext(b1);
+        b1.addNext(b5);
+        b1.addNext(b2);
+        b2.addNext(b3);
+        b3.addNext(b1);
+        b3.addNext(b4);
+        b5.addNext(b6);
+        b5.addNext(b8);
+        b6.addNext(b7);
+        b7.addNext(b3);
+        b8.addNext(b7);
+
+        var root = new BlockNode(b0);
+        BlockNodeBuilder builder = new BlockNodeBuilder(root, 9);
+        builder.build();
     }
 }

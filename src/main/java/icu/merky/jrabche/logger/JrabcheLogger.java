@@ -29,42 +29,60 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.llvmir.inst;
+package icu.merky.jrabche.logger;
 
-import icu.merky.jrabche.llvmir.types.IRType;
-import icu.merky.jrabche.llvmir.values.IRVal;
+public class JrabcheLogger {
+    public enum LoggerLevel {D, I, W, E}
 
-import java.util.Set;
+    LoggerLevel loggerLevel = LoggerLevel.D;
+    public static JrabcheLogger L;
 
-public class IRInstBitCast extends IRInst {
-    private IRVal val;
-
-    public IRInstBitCast(IRVal val, IRType toType) {
-        super(InstID.BitCastInst, toType);
-        this.val = val;
+    static {
+        L = new JrabcheLogger();
     }
 
-    @Override
-    public String toString() {
-        return String.format("%s = bitcast %s %s to %s", name, val.getType(), val.asValue(), getType());
+    public JrabcheLogger() {
     }
 
-    @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (val == inst) {
-            val = newInst;
-            return true;
+    private void output(Object s) {
+        System.out.println(s);
+    }
+
+    private void outputF(String format, Object... objects) {
+        System.out.printf(format, objects);
+    }
+
+    public void setLevel(LoggerLevel loggerLevel) {
+        this.loggerLevel = loggerLevel;
+    }
+
+    public void Info(Object s) {
+        if (loggerLevel.ordinal() <= LoggerLevel.I.ordinal()) {
+            outputF("[INFO]  ");
+            output(s);
         }
-        return false;
     }
 
-    @Override
-    public String asValue() {
-        return name;
+    public void InfoF(String s, Object... objects) {
+        if (loggerLevel.ordinal() <= LoggerLevel.I.ordinal()) {
+            outputF("[INFO]  ");
+            outputF(s, objects);
+        }
     }
 
-    @Override
-    public Set<IRVal> getUses() {
-        return Set.of(val);
+    public void DebugF(String s, Object... os) {
+        if (loggerLevel.ordinal() <= LoggerLevel.D.ordinal()) {
+            outputF("[DEBUG] ");
+            outputF(s, os);
+        }
     }
+
+    public void Debug(Object s) {
+        if (loggerLevel.ordinal() <= LoggerLevel.D.ordinal()) {
+            outputF("[DEBUG] ");
+            output(s);
+
+        }
+    }
+
 }

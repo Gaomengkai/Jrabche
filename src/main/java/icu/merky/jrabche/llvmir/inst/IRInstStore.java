@@ -34,19 +34,31 @@ package icu.merky.jrabche.llvmir.inst;
 import icu.merky.jrabche.llvmir.types.InvalidType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
+import java.util.Set;
+
 import static icu.merky.jrabche.llvmir.types.PointerType.MakePointer;
 
 public class IRInstStore extends IRInst {
     // store [123 x i32]* %arg_0, [123 x i32]** %v0
-    IRVal from, to;
+    IRVal from;
+
+
+    public IRVal getTo() {
+        return to;
+    }
+
+    IRVal to;
 
     public IRInstStore(IRVal from, IRVal to) {
         super(InstID.StoreInst, new InvalidType());
         this.from = from;
         this.to = to;
         // check type.
-        if (!MakePointer(from.getType()).equals(to.getType()))
-            throw new RuntimeException("Type mismatch.");
+        if (!MakePointer(from.getType()).equals(to.getType())) throw new RuntimeException("Type mismatch.");
+    }
+
+    public IRVal getFrom() {
+        return from;
     }
 
     @Override
@@ -71,5 +83,10 @@ public class IRInstStore extends IRInst {
     @Override
     public String asValue() {
         return null;
+    }
+
+    @Override
+    public Set<IRVal> getUses() {
+        return Set.of(from, to);
     }
 }

@@ -29,42 +29,53 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.llvmir.inst;
+package icu.merky.jrabche.opt.llvmir.algorithms;
 
-import icu.merky.jrabche.llvmir.types.IRType;
-import icu.merky.jrabche.llvmir.values.IRVal;
+import java.util.*;
 
-import java.util.Set;
+/**
+ * Aho, A. V., Lam, M. S., Sethi, R., & Ullman, J. D. (2014).
+ * Compilers: Principles, techniques, and tools (Second edition, Pearson new international edition).
+ * Pearson.
+ * <br>
+ * Algorithm 9 41: Depth rst spanning tree and depth rst ordering
+ *
+ * @param <T> type of the value stored in the node
+ */
+public class DeepFirstOrder<T, V extends GraphNode<T>> {
+    Set<V> visited;
+    Map<V, Set<V>> edges;
+    Map<V, Integer> order = new HashMap<>();
+    int c = 0;
 
-public class IRInstBitCast extends IRInst {
-    private IRVal val;
-
-    public IRInstBitCast(IRVal val, IRType toType) {
-        super(InstID.BitCastInst, toType);
-        this.val = val;
+    public DeepFirstOrder(V root, int size) {
+        visited = new HashSet<>(size);
+        c = size - 1;
+        edges = new HashMap<>(size);
+        search(root);
     }
 
-    @Override
-    public String toString() {
-        return String.format("%s = bitcast %s %s to %s", name, val.getType(), val.asValue(), getType());
-    }
-
-    @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (val == inst) {
-            val = newInst;
-            return true;
+    void search(V n) {
+        visited.add(n);
+        for (var s : n.getSuccessors()) {
+            if (!visited.contains(s)) {
+                // n->s is a tree edge
+                edges.putIfAbsent(n, new HashSet<>());
+                edges.get(n).add((V) s);
+                search((V) s);
+            }
         }
-        return false;
+        order.put(n, c--);
     }
 
-    @Override
-    public String asValue() {
-        return name;
-    }
-
-    @Override
-    public Set<IRVal> getUses() {
-        return Set.of(val);
+    public List<V> getOrder() {
+        List<V> res = new ArrayList<>(order.size());
+        for (int i = 0; i < order.size(); i++) {
+            res.add(null);
+        }
+        for (var entry : order.entrySet()) {
+            res.set(entry.getValue(), entry.getKey());
+        }
+        return res;
     }
 }

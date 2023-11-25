@@ -29,55 +29,51 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.helper;
+package icu.merky.jrabche.opt.llvmir.algorithms;
 
-import icu.merky.jrabche.exceptions.NotImplementedException;
-import icu.merky.jrabche.llvmir.types.IRBasicType;
-import icu.merky.jrabche.llvmir.types.InvalidType;
-import icu.merky.jrabche.llvmir.values.IRVal;
-import icu.merky.jrabche.llvmir.values.IRValConst;
+import icu.merky.jrabche.llvmir.IRBuilderImpl;
+import icu.merky.jrabche.opt.llvmir.IROptBlockRearrange;
+import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
 
-public class ConstInitList extends IRVal {
-    public IRBasicType containedType;
-    public List<ConstInitList> initLists;
-    public List<IRValConst> constVals;
-    public List<ILType> witch;
-    public List<Integer> indices;
+import static icu.merky.jrabche.fe.visitor.SylangVisitorImplTest.getVisitorContext;
 
-    public ConstInitList(IRBasicType atomType) {
-        super(new InvalidType());
-        containedType = atomType;
-        witch = new ArrayList<>();
-        indices = new ArrayList<>();
+public class LiveInOutTest {
+    @Test
+    void case1() throws NoSuchFieldException, IllegalAccessException {
+        var program = """
+                int main() {
+                int a=getint();
+                int b=getint();
+                int c=0;
+                while(a<b){
+                if(b>0){
+                a=a+1;
+                c=c+1;
+                }
+                }
+                putint(a);
+                putint(b);
+                return 0;
+                }
+                               
+                """;
+        var builder = new IRBuilderImpl();
+        getVisitorContext(program, builder);
+        var module = builder.getModule();
+        var F = module.getFunctions().get("main");
+        new IROptBlockRearrange(F).optimize();
+
+        BlockNodeBuilder bnb = new BlockNodeBuilder(F);
+        bnb.build();
+        bnb.buildLiveInOut();
+        BlockNode root = new BlockNode(F.entryBB());
+        for (Iterator<BlockNode> it = root.DFOIter(); it.hasNext(); ) {
+            var x = it.next();
+            System.out.println(x.val.getName());
+            System.out.println("def,use:" + x.def + "," + x.use);
+            System.out.println("in,out:" + x.liveIn + "," + x.liveOut);
+        }
     }
-
-    @Override
-    public String asValue() {
-        throw new NotImplementedException();
-    }
-
-    public void addIL(ConstInitList il) {
-        if (initLists == null)
-            initLists = new ArrayList<>();
-        initLists.add(il);
-        indices.add(initLists.size() - 1);
-        witch.add(ILType.IL);
-    }
-
-    public void addCV(IRValConst cv) {
-        if (constVals == null)
-            constVals = new ArrayList<>();
-        constVals.add(cv);
-        indices.add(constVals.size() - 1);
-        witch.add(ILType.CV);
-    }
-
-    public int size() {
-        return indices.size();
-    }
-
-    public enum ILType {IL, CV}
 }

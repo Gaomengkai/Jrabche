@@ -31,13 +31,19 @@
 
 package icu.merky.jrabche.llvmir.inst;
 
+import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
 import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 import icu.merky.jrabche.llvmir.values.ValueRepresentable;
 
-public abstract class IRInst extends IRVal implements Cloneable, Replaceable, ValueRepresentable {
+import java.util.HashSet;
+import java.util.Set;
+
+public abstract class IRInst extends IRVal implements Cloneable, DUR, ValueRepresentable {
     protected InstID instID;
+    Set<IRInst> usedBy = new HashSet<>();
     private boolean deleted = false;
+    private IRBasicBlock parent;
 
     public IRInst(String name, InstID instID, IRType valType) {
         super(valType);
@@ -50,6 +56,19 @@ public abstract class IRInst extends IRVal implements Cloneable, Replaceable, Va
         super(valType);
         this.type = valType;
         this.instID = instID;
+    }
+
+    public IRBasicBlock getParent() {
+        return parent;
+    }
+
+    public void setParent(IRBasicBlock parent) {
+        this.parent = parent;
+    }
+
+    @Override
+    public Set<IRInst> getUsedBy() {
+        return usedBy;
     }
 
     public boolean isDeleted() {
@@ -132,11 +151,9 @@ public abstract class IRInst extends IRVal implements Cloneable, Replaceable, Va
     }
 
     public boolean needName() {
-        if (isTerminatorInst() || isStoreInst())
-            return false;
+        if (isTerminatorInst() || isStoreInst()) return false;
         if (isCallInst()) {
-            if (this instanceof IRInstCall call)
-                return !call.getType().isVoid();
+            if (this instanceof IRInstCall call) return !call.getType().isVoid();
             throw new RuntimeException("CallInst need IRInstCall");
         }
         return true;
@@ -156,19 +173,6 @@ public abstract class IRInst extends IRVal implements Cloneable, Replaceable, Va
     }
 
     protected enum InstID {
-        Invalid,
-        AllocaInst,
-        ReturnInst,
-        BrInst,
-        MathInst,
-        ICmpInst,
-        FCmpInst,
-        LoadInst,
-        StoreInst,
-        BitCastInst,
-        GetElementPtrInst,
-        ConvertInst,
-        CallInst,
-        PhiInst,
+        Invalid, AllocaInst, ReturnInst, BrInst, MathInst, ICmpInst, FCmpInst, LoadInst, StoreInst, BitCastInst, GetElementPtrInst, ConvertInst, CallInst, PhiInst,
     }
 }

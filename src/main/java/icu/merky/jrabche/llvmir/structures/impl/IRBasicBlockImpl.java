@@ -52,9 +52,9 @@ public class IRBasicBlockImpl implements IRBasicBlock {
     }
 
     @Override
-    public int addInst(IRInst inst) {
+    public void addInst(IRInst inst) {
         instList.add(inst);
-        return instList.size() - 1;
+        inst.setParent(this);
     }
 
     @Override
@@ -69,6 +69,11 @@ public class IRBasicBlockImpl implements IRBasicBlock {
     }
 
     @Override
+    public int getSize() {
+        return instList.size();
+    }
+
+    @Override
     public String getName() {
         return this.name;
     }
@@ -79,7 +84,7 @@ public class IRBasicBlockImpl implements IRBasicBlock {
     }
 
     @Override
-    public List<IRInst> getInst() {
+    public List<IRInst> getInsts() {
         return this.instList;
     }
 
@@ -100,12 +105,12 @@ public class IRBasicBlockImpl implements IRBasicBlock {
     }
 
     @Override
-    public List<IRBasicBlock> getPrev() {
+    public List<IRBasicBlock> getPre() {
         return this.prevs;
     }
 
     @Override
-    public List<IRBasicBlock> getNext() {
+    public List<IRBasicBlock> getSuc() {
         return this.nexts;
     }
 
@@ -127,9 +132,16 @@ public class IRBasicBlockImpl implements IRBasicBlock {
 
     @Override
     public void chunkAfterTerminator() {
-        for (int i = 0; i < instList.size(); i++) {
-            if (instList.get(i).isTerminatorInst()) {
-                instList.subList(i + 1, instList.size()).clear();
+        // for (int i = 0; i < instList.size(); i++) {
+        //     if (instList.get(i).isTerminatorInst()) {
+        //         instList.subList(i + 1, instList.size()).clear();
+        //         return;
+        //     }
+        // }
+        // performance optimization:(instList is linklist), O(n^2) -> O(n)
+        for (IRInst inst : instList) {
+            if (inst.isTerminatorInst()) {
+                instList.subList(instList.indexOf(inst) + 1, instList.size()).clear();
                 return;
             }
         }

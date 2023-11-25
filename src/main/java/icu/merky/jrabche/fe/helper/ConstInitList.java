@@ -29,42 +29,55 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.llvmir.inst;
+package icu.merky.jrabche.fe.helper;
 
-import icu.merky.jrabche.llvmir.types.IRType;
+import icu.merky.jrabche.exceptions.NotImplementedException;
+import icu.merky.jrabche.llvmir.types.IRBasicType;
+import icu.merky.jrabche.llvmir.types.InvalidType;
 import icu.merky.jrabche.llvmir.values.IRVal;
+import icu.merky.jrabche.llvmir.values.IRValConst;
 
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
-public class IRInstBitCast extends IRInst {
-    private IRVal val;
+public class ConstInitList extends IRVal {
+    public IRBasicType containedType;
+    public List<ConstInitList> initLists;
+    public List<IRValConst> constVals;
+    public List<ILType> witch;
+    public List<Integer> indices;
 
-    public IRInstBitCast(IRVal val, IRType toType) {
-        super(InstID.BitCastInst, toType);
-        this.val = val;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%s = bitcast %s %s to %s", name, val.getType(), val.asValue(), getType());
-    }
-
-    @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (val == inst) {
-            val = newInst;
-            return true;
-        }
-        return false;
+    public ConstInitList(IRBasicType atomType) {
+        super(new InvalidType());
+        containedType = atomType;
+        witch = new ArrayList<>();
+        indices = new ArrayList<>();
     }
 
     @Override
     public String asValue() {
-        return name;
+        throw new NotImplementedException();
     }
 
-    @Override
-    public Set<IRVal> getUses() {
-        return Set.of(val);
+    public void addIL(ConstInitList il) {
+        if (initLists == null)
+            initLists = new ArrayList<>();
+        initLists.add(il);
+        indices.add(initLists.size() - 1);
+        witch.add(ILType.IL);
     }
+
+    public void addCV(IRValConst cv) {
+        if (constVals == null)
+            constVals = new ArrayList<>();
+        constVals.add(cv);
+        indices.add(constVals.size() - 1);
+        witch.add(ILType.CV);
+    }
+
+    public int size() {
+        return indices.size();
+    }
+
+    public enum ILType {IL, CV}
 }

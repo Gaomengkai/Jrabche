@@ -29,42 +29,25 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.llvmir.inst;
+package icu.merky.jrabche.llvmir;
 
-import icu.merky.jrabche.llvmir.types.IRType;
-import icu.merky.jrabche.llvmir.values.IRVal;
+public class StaticVariableCounter {
+    static int counter = 0;
 
-import java.util.Set;
-
-public class IRInstBitCast extends IRInst {
-    private IRVal val;
-
-    public IRInstBitCast(IRVal val, IRType toType) {
-        super(InstID.BitCastInst, toType);
-        this.val = val;
+    public static int get() {
+        return counter;
     }
 
-    @Override
-    public String toString() {
-        return String.format("%s = bitcast %s %s to %s", name, val.getType(), val.asValue(), getType());
+    public static int getAndIncrement() {
+        return counter++;
     }
 
-    @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (val == inst) {
-            val = newInst;
-            return true;
-        }
-        return false;
+    @Deprecated
+    public static int incrementAndGet() {
+        return ++counter;
     }
 
-    @Override
-    public String asValue() {
-        return name;
-    }
-
-    @Override
-    public Set<IRVal> getUses() {
-        return Set.of(val);
+    public static void set(int value) {
+        counter = value;
     }
 }

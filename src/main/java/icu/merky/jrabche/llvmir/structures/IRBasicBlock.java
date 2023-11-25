@@ -38,9 +38,8 @@ import java.util.List;
 public interface IRBasicBlock {
     /**
      * @param inst the inst to be added
-     * @return the position of the inst
      */
-    int addInst(IRInst inst);
+    void addInst(IRInst inst);
 
     /**
      * @param position the position of the inst to be deleted
@@ -50,6 +49,8 @@ public interface IRBasicBlock {
     int addInst(int position, IRInst inst);
 
     void addInstFront(IRInst inst);
+
+    int getSize();
 
     /**
      * @return the name of the inst
@@ -64,7 +65,7 @@ public interface IRBasicBlock {
     /**
      * @return the insts in the basic block
      */
-    List<IRInst> getInst();
+    List<IRInst> getInsts();
 
     /**
      * @return the terminator of the basic block
@@ -81,12 +82,12 @@ public interface IRBasicBlock {
     /**
      * @return the previous  basic blocks
      */
-    List<IRBasicBlock> getPrev();
+    List<IRBasicBlock> getPre();
 
     /**
      * @return the next basic blocks
      */
-    List<IRBasicBlock> getNext();
+    List<IRBasicBlock> getSuc();
 
     /**
      * @param prev the previous basic block to be added

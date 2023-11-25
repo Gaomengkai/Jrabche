@@ -34,7 +34,9 @@ package icu.merky.jrabche.llvmir.inst;
 import icu.merky.jrabche.llvmir.types.FunctionType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class IRInstCall extends IRInst {
     List<IRVal> args;
@@ -90,5 +92,10 @@ public class IRInstCall extends IRInst {
     @Override
     public String asValue() {
         return name;
+    }
+
+    @Override
+    public Set<IRVal> getUses() {
+        return new HashSet<>(args);
     }
 }

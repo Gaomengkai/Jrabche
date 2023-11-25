@@ -29,18 +29,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.fe.symbols;
+package icu.merky.jrabche.opt.llvmir.annotations;
 
-import icu.merky.jrabche.llvmir.types.IRType;
-import icu.merky.jrabche.llvmir.values.IRVal;
+public @interface PassOn {
+    on value();
 
-public class GlobalSymbol extends IRVal {
-    public GlobalSymbol(String name, IRType type) {
-        super(type, name);
-    }
-
-    @Override
-    public String asValue() {
-        throw new UnsupportedOperationException();
-    }
+    enum on {FUNCTION, BASICBLOCK, MODULE}
 }

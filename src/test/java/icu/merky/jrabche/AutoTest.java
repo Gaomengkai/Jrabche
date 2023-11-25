@@ -29,13 +29,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.fe.visitor;
+package icu.merky.jrabche;
 
+import icu.merky.jrabche.fe.Preprocessor;
 import icu.merky.jrabche.fe.parser.SylangLexer;
 import icu.merky.jrabche.fe.parser.SylangParser;
 import icu.merky.jrabche.fe.parser.SylangVisitor;
+import icu.merky.jrabche.fe.visitor.SylangVisitorImpl;
 import icu.merky.jrabche.llvmir.IRBuilder;
 import icu.merky.jrabche.llvmir.IRBuilderImpl;
+import icu.merky.jrabche.llvmir.structures.IRModule;
+import icu.merky.jrabche.logger.JrabcheLogger;
+import icu.merky.jrabche.opt.llvmir.Executor;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.misc.Utils;
 import org.junit.jupiter.api.Assertions;
@@ -50,80 +55,69 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static icu.merky.jrabche.fe.visitor.FETestConfig.*;
+import static icu.merky.jrabche.logger.JrabcheLogger.L;
 
 public class AutoTest {
     private final File sydir = new File(SY_DIR);
 
-    List<File> getAllSyFile() {
-        return new ArrayList<>(List.of(Objects.requireNonNull(sydir.listFiles((dir, name) -> name.endsWith(".sy")))));
+    private static void compare(String sourceFilename, int exitValue, File outFileExpected, File tempOutFile) throws IOException {
+        // compare
+        var endl_pattern = Pattern.compile("\r\n");
+
+        char[] stdout = Utils.readFile(tempOutFile.getAbsolutePath());
+        var stdoutStr = new String(stdout);
+        if (!stdoutStr.endsWith("\n") && stdoutStr.length() != 0) stdoutStr += "\n";
+        stdoutStr += exitValue;
+        stdoutStr += "\n";
+        Matcher stdoutMatcher = endl_pattern.matcher(stdoutStr);
+        stdoutStr = stdoutMatcher.replaceAll("\n");
+        stdoutStr = stdoutStr.replaceAll("\r", "");
+
+        char[] stdoutExpected = Utils.readFile(outFileExpected.getAbsolutePath());
+        var stdoutExpectedStr = new String(stdoutExpected);
+        if (!stdoutExpectedStr.endsWith("\n")) stdoutExpectedStr += "\n";
+        Matcher stdoutExpectedMatcher = endl_pattern.matcher(stdoutExpectedStr);
+        stdoutExpectedStr = stdoutExpectedMatcher.replaceAll("\n");
+        stdoutStr = stdoutStr.replaceAll("\r", "");
+        Assertions.assertEquals(stdoutExpectedStr, stdoutStr, "Test failed: " + sourceFilename);
     }
 
-    @Test
-    void testCompileToIR() {
-        var files = getAllSyFile();
-        var len = files.size();
-        var noError = 0;
-        List<File> failed = new ArrayList<>();
-        long startTime = System.currentTimeMillis();
-        for (File file : files) {
-            // System.out.println("Testing " + file.getName());
-            try {
-                CharStream input = CharStreams.fromFileName(file.getAbsolutePath());
-                Lexer lexer = new SylangLexer(input);
-                TokenStream tokens = new CommonTokenStream(lexer);
-                SylangParser parser = new SylangParser(tokens);
-                IRBuilder builder = new IRBuilderImpl();
-                SylangVisitorImpl visitor = new SylangVisitorImpl(builder);
-                visitor.visit(parser.compUnit());
-                String ir = builder.getModule().toString();
-                noError += 1;
-            } catch (Exception ignored) {
-                failed.add(file);
-            }
-        }
-        System.out.println("Time: " + (System.currentTimeMillis() - startTime) + "ms");
-        System.out.printf("Success: %d/%d\n", noError, len);
-        System.out.println("Failed:");
-        for (File file : failed) {
-            System.out.println(file.getName());
-        }
-        System.out.println("Retrying without catch");
-        for (File file : failed) {
-            System.out.println("Retrying " + file.getName());
-            try {
-                CharStream input = CharStreams.fromFileName(file.getAbsolutePath());
-                Lexer lexer = new SylangLexer(input);
-                TokenStream tokens = new CommonTokenStream(lexer);
-                SylangParser parser = new SylangParser(tokens);
-                IRBuilder builder = new IRBuilderImpl();
-                SylangVisitorImpl visitor = new SylangVisitorImpl(builder);
-                visitor.visit(parser.compUnit());
-                String ir = builder.getModule().toString();
-            } catch (IOException ignored) {
-                failed.add(file);
-            }
-        }
-        Assertions.assertEquals(len, noError);
-    }
-
-    void testRunOne(File syFile, File inFile, File outFileExpected) throws IOException {
+    private static void genIR(File syFile, File tempFile, boolean enableOpt) throws IOException {
         // to ir.
-        CharStream input = CharStreams.fromFileName(syFile.getAbsolutePath());
+        char[] inputChars = Utils.readFile(syFile.getAbsolutePath());
+        String inputStr = new String(inputChars);
+        inputStr = Preprocessor.preprocess(inputStr);
+        CharStream input = CharStreams.fromString(inputStr);
         Lexer lexer = new SylangLexer(input);
         TokenStream tokens = new CommonTokenStream(lexer);
         SylangParser parser = new SylangParser(tokens);
         IRBuilder builder = new IRBuilderImpl();
         SylangVisitor<Void> visitor = new SylangVisitorImpl(builder);
         visitor.visit(parser.compUnit());
-        String ir = builder.getModule().toString();
+        IRModule module = builder.getModule();
+        if (enableOpt) {
+            new Executor(module).run();
+        }
+        String ir = module.toString();
+        if (ENABLE_IR_OUTPUT)
+            System.out.println(ir);
 
         // write to $temp$/test.ll
+        Utils.writeFile(tempFile.getAbsolutePath(), ir);
+    }
+
+    List<File> getAllSyFile() {
+        return new ArrayList<>(List.of(Objects.requireNonNull(sydir.listFiles((dir, name) -> name.endsWith(".sy")))));
+    }
+
+    void testRunOne(File syFile, File inFile, File outFileExpected, boolean enableOpt) throws IOException {
         File temp = new File(System.getProperty("java.io.tmpdir"));
         File tempDir = new File(temp, "testll");
         tempDir.mkdirs();
         File tempFile = new File(tempDir, "test.ll");
         File tempOutFile = new File(tempDir, "test.out");
-        Utils.writeFile(tempFile.getAbsolutePath(), ir);
+
+        genIR(syFile, tempFile, enableOpt);
 
         // use lli to run
         ProcessBuilder pb = new ProcessBuilder("lli",
@@ -146,45 +140,18 @@ public class AutoTest {
 
 
         // compare
-        var endl_pattern = Pattern.compile("\r\n");
-
-        char[] stdout = Utils.readFile(tempOutFile.getAbsolutePath());
-        var stdoutStr = new String(stdout);
-        if (!stdoutStr.endsWith("\n") && stdoutStr.length() != 0) stdoutStr += "\n";
-        stdoutStr += exitValue;
-        stdoutStr += "\n";
-        Matcher stdoutMatcher = endl_pattern.matcher(stdoutStr);
-        stdoutStr = stdoutMatcher.replaceAll("\n");
-        stdoutStr = stdoutStr.replace("\r", "");
-
-        char[] stdoutExpected = Utils.readFile(outFileExpected.getAbsolutePath());
-        var stdoutExpectedStr = new String(stdoutExpected);
-        if (!stdoutExpectedStr.endsWith("\n")) stdoutExpectedStr += "\n";
-        Matcher stdoutExpectedMatcher = endl_pattern.matcher(stdoutExpectedStr);
-        stdoutExpectedStr = stdoutExpectedMatcher.replaceAll("\n");
-        stdoutExpectedStr = stdoutExpectedStr.replace("\r", "");
-        Assertions.assertEquals(stdoutExpectedStr, stdoutStr, "Test failed: " + syFile.getName());
+        compare(syFile.getName(), exitValue, outFileExpected, tempOutFile);
     }
 
-    void testRunOneOnEXE(File syFile, File inFile, File outFileExpected) throws IOException {
-        // to ir.
-        CharStream input = CharStreams.fromFileName(syFile.getAbsolutePath());
-        Lexer lexer = new SylangLexer(input);
-        TokenStream tokens = new CommonTokenStream(lexer);
-        SylangParser parser = new SylangParser(tokens);
-        IRBuilder builder = new IRBuilderImpl();
-        SylangVisitor<Void> visitor = new SylangVisitorImpl(builder);
-        visitor.visit(parser.compUnit());
-        String ir = builder.getModule().toString();
-
-        // write to $temp$/test.ll
+    void testRunOneOnEXE(File syFile, File inFile, File outFileExpected, boolean enableOpt) throws IOException {
         File temp = new File(System.getProperty("java.io.tmpdir"));
         File tempDir = new File(temp, "testll");
         tempDir.mkdirs();
         File tempFile = new File(tempDir, "test.ll");
         File tempOutFile = new File(tempDir, "test.out");
         File tempExeFile = new File(tempDir, "test.exe");
-        Utils.writeFile(tempFile.getAbsolutePath(), ir);
+        // to ir.
+        genIR(syFile, tempFile, enableOpt);
 
         // use clang to compile
         ProcessBuilder pb = new ProcessBuilder("clang", tempFile.getAbsolutePath(), "D:\\Code\\3\\sylib\\cmake-build-debug-gcc13\\libsy.a", "-o", tempExeFile.getAbsolutePath());
@@ -210,30 +177,20 @@ public class AutoTest {
         exitValue &= 0xff;
 
 
-        // compare
-        var endl_pattern = Pattern.compile("\r\n");
-
-        char[] stdout = Utils.readFile(tempOutFile.getAbsolutePath());
-        var stdoutStr = new String(stdout);
-        if (!stdoutStr.endsWith("\n") && stdoutStr.length() != 0) stdoutStr += "\n";
-        stdoutStr += exitValue;
-        stdoutStr += "\n";
-        Matcher stdoutMatcher = endl_pattern.matcher(stdoutStr);
-        stdoutStr = stdoutMatcher.replaceAll("\n");
-
-        char[] stdoutExpected = Utils.readFile(outFileExpected.getAbsolutePath());
-        var stdoutExpectedStr = new String(stdoutExpected);
-        if (!stdoutExpectedStr.endsWith("\n")) stdoutExpectedStr += "\n";
-        Matcher stdoutExpectedMatcher = endl_pattern.matcher(stdoutExpectedStr);
-        stdoutExpectedStr = stdoutExpectedMatcher.replaceAll("\n");
-        Assertions.assertEquals(stdoutExpectedStr, stdoutStr, "Test failed: " + syFile.getName());
+        compare(syFile.getName(), exitValue, outFileExpected, tempOutFile);
     }
 
-
-    void testSpec(int no, boolean useEXE) {
+    void testSpec(int no, boolean useEXE, boolean enableOpt) {
+        String noPattern;
+        if (no < 100) {
+            noPattern = "%02d";
+        } else {
+            noPattern = "%03d";
+        }
+        L.DebugF("Testing %s\n", String.format(noPattern, no));
         // search %2d*.sy
         var syFiles = getAllSyFile();
-        var syFile = syFiles.stream().filter(f -> f.getName().startsWith(String.format("%02d", no))).findFirst().orElse(null);
+        var syFile = syFiles.stream().filter(f -> f.getName().startsWith(String.format(noPattern, no))).findFirst().orElse(null);
         Assertions.assertNotNull(syFile);
         // search %2d*.in
         String inFileName = syFile.getName().replace(".sy", ".in");
@@ -243,45 +200,57 @@ public class AutoTest {
         var outFileExpected = new File(syFile.getParentFile(), outFileName);
         Assertions.assertTrue(outFileExpected.exists());
         try {
-            if (useEXE) testRunOneOnEXE(syFile, inFile, outFileExpected);
-            else testRunOne(syFile, inFile, outFileExpected);
+            if (useEXE) testRunOneOnEXE(syFile, inFile, outFileExpected, enableOpt);
+            else testRunOne(syFile, inFile, outFileExpected, enableOpt);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    void testSpec(int no, boolean useEXE) {
+        testSpec(no, useEXE, false);
+    }
+
     @Test
     void testNo0_25() {
+        L.setLevel(JrabcheLogger.LoggerLevel.I);
+        ENABLE_IR_OUTPUT = false;
         for (int i = 0; i <= 25; i++) {
-            testSpec(i, false);
+            testSpec(i, false, ENABLE_IR_OPT);
         }
     }
 
     @Test
     void testNo26_50() {
+        L.setLevel(JrabcheLogger.LoggerLevel.I);
+        ENABLE_IR_OUTPUT = false;
         for (int i = 26; i <= 50; i++) {
-            testSpec(i, false);
+            testSpec(i, false, ENABLE_IR_OPT);
         }
     }
 
     @Test
     void testNo51_75() {
+        L.setLevel(JrabcheLogger.LoggerLevel.I);
+        ENABLE_IR_OUTPUT = false;
         for (int i = 51; i <= 75; i++) {
-
-            testSpec(i, false);
+            testSpec(i, false, ENABLE_IR_OPT);
         }
     }
 
     @Test
     void testNo76_99() {
+        L.setLevel(JrabcheLogger.LoggerLevel.I);
+        ENABLE_IR_OUTPUT = false;
         for (int i = 76; i <= 99; i++) {
-            if (i == 95) testSpec(i, true);
-            else testSpec(i, false);
+            if (i == 95) testSpec(i, true, ENABLE_IR_OPT);
+            else testSpec(i, false, ENABLE_IR_OPT);
         }
     }
 
 
     void testAll() {
+        ENABLE_IR_OUTPUT = false;
         testNo0_25();
         testNo26_50();
         testNo51_75();
@@ -289,7 +258,10 @@ public class AutoTest {
     }
 
 
+    @Test
     void testOne() {
-        testSpec(95, true);
+        ENABLE_IR_OUTPUT = true;
+        L.setLevel(JrabcheLogger.LoggerLevel.I);
+        testSpec(301, false, ENABLE_IR_OPT);
     }
 }

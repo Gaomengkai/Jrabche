@@ -31,14 +31,17 @@
 
 package icu.merky.jrabche.llvmir.inst;
 
-import icu.merky.jrabche.helper.Helper;
+import icu.merky.jrabche.fe.helper.FEVisitorHelper;
 import icu.merky.jrabche.llvmir.values.IRVal;
+
+import java.util.Set;
 
 public class IRInstMath extends IRInst {
     MathOP mathOP;
     IRVal lhs, rhs;
+
     public IRInstMath(MathOP mathOP, IRVal v1, IRVal v2) {
-        super(null, InstID.MathInst, Helper.ResolveType(v1.getType(), v2.getType()).toIRType());
+        super(null, InstID.MathInst, FEVisitorHelper.ResolveType(v1.getType(), v2.getType()).toIRType());
         this.mathOP = mathOP;
         this.lhs = v1;
         this.rhs = v2;
@@ -75,6 +78,14 @@ public class IRInstMath extends IRInst {
     @Override
     public String asValue() {
         return name;
+    }
+
+    @Override
+    public Set<IRVal> getUses() {
+        if (lhs.equals(rhs)) {
+            return Set.of(lhs);
+        }
+        return Set.of(lhs, rhs);
     }
 
     public enum MathOP {

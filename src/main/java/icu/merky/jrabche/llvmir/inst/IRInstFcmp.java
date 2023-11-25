@@ -36,6 +36,8 @@ import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.types.IntType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
+import java.util.Set;
+
 public class IRInstFcmp extends IRInst {
 
     private FcmpOp op;
@@ -104,6 +106,11 @@ public class IRInstFcmp extends IRInst {
     @Override
     public String asValue() {
         return name;
+    }
+
+    @Override
+    public Set<IRVal> getUses() {
+        return Set.of(lhs, rhs);
     }
 
     public enum FcmpOp {FALSE, OEQ, OGE, OGT, OLE, OLT, TRUE, UEQ, UGE, UGT, ULE, ULT, UNE, UNO}

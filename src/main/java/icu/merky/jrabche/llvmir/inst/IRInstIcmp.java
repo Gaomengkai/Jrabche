@@ -35,6 +35,8 @@ import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.types.IntType;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
+import java.util.Set;
+
 public class IRInstIcmp extends IRInst {
     private IcmpOp op;
     private IRVal lhs, rhs;
@@ -108,6 +110,12 @@ public class IRInstIcmp extends IRInst {
     @Override
     public String asValue() {
         return name;
+    }
+
+    @Override
+    public Set<IRVal> getUses() {
+        if (lhs.equals(rhs)) return Set.of(lhs);
+        return Set.of(lhs, rhs);
     }
 
     public enum IcmpOp {

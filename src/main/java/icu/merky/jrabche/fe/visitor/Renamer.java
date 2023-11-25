@@ -31,17 +31,18 @@
 
 package icu.merky.jrabche.fe.visitor;
 
+import icu.merky.jrabche.llvmir.StaticVariableCounter;
+
 public class Renamer {
-    int constCnt = 0;
 
     public String getNextLocalConstName(String originalName) {
-        return "const." + originalName + "." + constCnt++;
+        return "const." + originalName + "." + StaticVariableCounter.getAndIncrement();
     }
 
     public String getNextLocalRepeatName(String originalName) {
         if (originalName.startsWith("%")) {
-            return originalName + "." + constCnt++;
+            return originalName + "." + StaticVariableCounter.getAndIncrement();
         }
-        return "v." + originalName + "." + constCnt++;
+        return "v." + originalName + "." + StaticVariableCounter.getAndIncrement();
     }
 }

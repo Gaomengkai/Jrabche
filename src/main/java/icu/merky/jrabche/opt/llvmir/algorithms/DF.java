@@ -29,42 +29,49 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.llvmir.inst;
+package icu.merky.jrabche.opt.llvmir.algorithms;
 
-import icu.merky.jrabche.llvmir.types.IRType;
-import icu.merky.jrabche.llvmir.values.IRVal;
+import java.util.*;
 
-import java.util.Set;
+// Dominator Frontiers
 
-public class IRInstBitCast extends IRInst {
-    private IRVal val;
+/**
+ * Cooper, K. D., Harvey, T. J., & Kennedy, K. (2006). <i>A simple, fast dominance algorithm.</i>
+ * <a href="https://hdl.handle.net/1911/96345">view the paper</a>
+ *
+ * @param <T>
+ * @param <V>
+ */
+public class DF<T, V extends GraphNode<T>> {
+    List<V> nodes;
+    Map<V, V> idom;
+    Map<V, Set<V>> DF;
 
-    public IRInstBitCast(IRVal val, IRType toType) {
-        super(InstID.BitCastInst, toType);
-        this.val = val;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%s = bitcast %s %s to %s", name, val.getType(), val.asValue(), getType());
-    }
-
-    @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (val == inst) {
-            val = newInst;
-            return true;
+    public DF(List<V> nodes, Map<V, V> idom) {
+        this.nodes = nodes;
+        this.idom = idom;
+        DF = new HashMap<>();
+        for (var node : nodes) {
+            DF.put(node, new HashSet<>());
         }
-        return false;
+        go();
     }
 
-    @Override
-    public String asValue() {
-        return name;
+    public Map<V, Set<V>> getDF() {
+        return DF;
     }
 
-    @Override
-    public Set<IRVal> getUses() {
-        return Set.of(val);
+    public void go() {
+        for (var node : nodes) {
+            if (node.getPredecessors().size() >= 2) {
+                for (var p : node.getPredecessors()) {
+                    V runner = (V) p;
+                    while (runner != idom.get(node)) {
+                        DF.get(runner).add(node);
+                        runner = idom.get(runner);
+                    }
+                }
+            }
+        }
     }
 }
