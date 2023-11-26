@@ -120,7 +120,7 @@ public class AutoTest {
         genIR(syFile, tempFile, enableOpt);
 
         // use lli to run
-        ProcessBuilder pb = new ProcessBuilder("lli",
+        ProcessBuilder pb = new ProcessBuilder(EXE_LLI,
                 "--extra-archive=\"" + LIB_GCC + "\"",
                 "--extra-archive=\"" + LIB_SY + "\"",
                 "--extra-archive=\"" + LIB_MINGWEX + "\"",
@@ -154,7 +154,7 @@ public class AutoTest {
         genIR(syFile, tempFile, enableOpt);
 
         // use clang to compile
-        ProcessBuilder pb = new ProcessBuilder("clang", tempFile.getAbsolutePath(), "D:\\Code\\3\\sylib\\cmake-build-debug-gcc13\\libsy.a", "-o", tempExeFile.getAbsolutePath());
+        ProcessBuilder pb = new ProcessBuilder(EXE_CLANG, tempFile.getAbsolutePath(), LIB_SY, "-o", tempExeFile.getAbsolutePath());
         pb.redirectErrorStream(true);
         var clangProcess = pb.start();
         try {
@@ -181,13 +181,15 @@ public class AutoTest {
     }
 
     void testSpec(int no, boolean useEXE, boolean enableOpt) {
+        // 计时
+        var start = System.currentTimeMillis();
         String noPattern;
         if (no < 100) {
-            noPattern = "%02d";
+            noPattern = "%02d_";
         } else {
             noPattern = "%03d";
         }
-        L.DebugF("Testing %s\n", String.format(noPattern, no));
+        L.InfoF("Testing %s\n", String.format(noPattern, no));
         // search %2d*.sy
         var syFiles = getAllSyFile();
         var syFile = syFiles.stream().filter(f -> f.getName().startsWith(String.format(noPattern, no))).findFirst().orElse(null);
@@ -204,6 +206,8 @@ public class AutoTest {
             else testRunOne(syFile, inFile, outFileExpected, enableOpt);
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            L.InfoF("Cost %dms\n", System.currentTimeMillis() - start);
         }
     }
 
@@ -262,6 +266,6 @@ public class AutoTest {
     void testOne() {
         ENABLE_IR_OUTPUT = true;
         L.setLevel(JrabcheLogger.LoggerLevel.I);
-        testSpec(301, false, ENABLE_IR_OPT);
+        testSpec(27, false, ENABLE_IR_OPT);
     }
 }

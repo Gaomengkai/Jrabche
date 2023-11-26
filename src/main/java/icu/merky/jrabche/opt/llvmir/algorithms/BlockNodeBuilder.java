@@ -71,6 +71,10 @@ public class BlockNodeBuilder {
         return reversedBlockMap;
     }
 
+    public BlockNode re(IRBasicBlock bb) {
+        return getReverseBlockMap().get(bb);
+    }
+
     public void buildLiveInOut() {
         BlockNode.BuildLiveInOut(root);
     }
@@ -97,7 +101,7 @@ public class BlockNodeBuilder {
         var df = getDf();
         var dfPlus = new HashMap<BlockNode, Set<BlockNode>>();
         dfsDfPlus(root, df, dfPlus);
-        return dfPlus;
+        return new EmptyMapSet<>(dfPlus);
     }
 
     private void dfsDfPlus(BlockNode cur, Map<BlockNode, Set<BlockNode>> df, Map<BlockNode, Set<BlockNode>> dfPlus) {

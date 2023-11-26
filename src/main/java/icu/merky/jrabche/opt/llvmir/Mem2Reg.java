@@ -138,7 +138,7 @@ public class Mem2Reg implements IRPass {
             }
         }
 
-        for (int allocaNum = allocas.size() - 1; allocaNum >= 0; allocaNum--) {
+        for (int allocaNum = 0; allocaNum < allocas.size(); allocaNum++) {
             IRInstAlloca ai = allocas.get(allocaNum);
             assert isAllocaPromotable(ai);
 
@@ -163,8 +163,8 @@ public class Mem2Reg implements IRPass {
         }
 
         List<IRVal> values = new ArrayList<>(allocas.size());
-        for (int k = 0; k < allocas.size(); k++) {
-            values.add(IRValUndef.create(allocas.get(k).getAllocatedType()));
+        for (IRInstAlloca alloca : allocas) {
+            values.add(IRValUndef.create(alloca.getAllocatedType()));
         }
 
         List<RenamePassData> renamePassWorkList = new ArrayList<>();
@@ -182,101 +182,15 @@ public class Mem2Reg implements IRPass {
             RemoveDeletedInstructions(b);
         }
 
-
-        // 4. insert phi
-        // {
-        //     // 4.1 direct dominance replace.
-        //     //       Entry
-        //     //       |
-        //     //       A
-        //     //     /   \
-        //     //    B     C
-        //     // A dominates B, C, just replace all B(,C)'s first load with A's last store.
-        //     var idoms = bnb.getIdomMap();
-        //     var order = bnb.getDfo();
-        //     var DF = bnb.getDf();
-        //     // var DFPlus = bnBuilder.getDfPlus();
-        //     new BuildUses(F).go();
-        //     for (Iterator<BlockNode> it = bnb.getRoot().DFOIter(); it.hasNext(); ) {
-        //         var bn = it.next();
-        //         reversedBlockMap.put(bn.getVal(), bn);
-        //     }
-        //     // Book: SSA-based Compiler Design, page 31
-        //     // Algorithm 3.1: Standard algorithm for inserting φ-functions
-        //
-        //     // 前导条件：在每一个基本块中，对于任意一个变量X，只有0次或1次的定义。
-        //     // pre-condition: for any variable X, there is at most one definition of X in each basic block.
-        //     // 这个条件在完成IROptRLSE的Pass之后就已经满足了。
-        //     // this condition is satisfied after IROptRLSE pass.
-        //
-        //     // Author: The original algorithm is due to Cytron et al. (1991).
-        //     // Modified by: Merky Nov,2023
-        //     for (var v : allocas) {
-        //         // var f = new HashSet<BlockNode>(); // set of blocks where phi is inserted
-        //         var stores = new HashSet<IRInstStore>(); // set of blocks that contain def of v. because the store only
-        //         // appears in the block that contains the def of v, so we can use a set to store it.
-        //         var phis = new HashMap<BlockNode, IRInstPhi>();
-        //         for (var I : v.getUsedBy()) {
-        //             if (I instanceof IRInstStore) {
-        //                 stores.add((IRInstStore) I);
-        //             }
-        //         }
-        //         while (!stores.isEmpty()) {
-        //             IRInstStore x = stores.iterator().next();
-        //             stores.remove(x);
-        //             BlockNode xParent = reversedBlockMap.get(x.getParent());
-        //             IRVal v1 = x.getFrom();
-        //             for (BlockNode y : DF.get(xParent)) {
-        //                 // y is the destination of inserting phi node.
-        //                 // QUESTION: Does y REALLY need a phi node?
-        //                 // Actually, y doesn't need a phi node if y's live-in set doesn't contain v.
-        //                 if (!y.liveIn.contains(v)) continue;
-        //                 if (phis.containsKey(y)) {
-        //                     phis.get(y).addIncoming(v1, xParent.getVal());
-        //                 } else {
-        //                     IRInstPhi phi = new IRInstPhi(v.getAllocatedType());
-        //                     phi.addIncoming(v1, xParent.getVal());
-        //                     phis.put(y, phi);
-        //                 }
-        //                 // f.add(y);
-        //             }
-        //         }
-        //         // 4.2 add direct dominance replace.
-        //         // for(var phiBlock : phis.entrySet()) {
-        //         //     var blockNode = phiBlock.getKey();
-        //         //     var phi = phiBlock.getValue();
-        //         //     var curBlock = blockNode.getVal();
-        //         //     var incomingBlocks = blockNode.getPredecessors();// 入边
-        //         //     HashSet<BlockNode> incomingBlockSet = incomingBlocks.stream().map(v1 -> (BlockNode) v1).collect(
-        //         //             HashSet<BlockNode>::new,
-        //         //             HashSet::add,
-        //         //             HashSet::addAll
-        //         //     );
-        //         //     for(var phiIncomingBlock:phi.getIncoming().keySet()) {
-        //         //         if(!incomingBlockSet.contains(reversedBlockMap.get(phiIncomingBlock))) {
-        //         //             IRVal traversed;
-        //         //             while()
-        //         //         }
-        //         //     }
-        //         //
-        //         // }
-        //         System.out.println(v.getName());
-        //         phis.forEach((k, v1) -> {
-        //             System.out.println("insert " + v1 + " in " + k);
-        //         });
-        //     }
-        //     System.out.println();
-        //
-        // }
         return false;
     }
 
     //
-    private void RenamePass(IRBasicBlock bb, IRBasicBlock pred, List<IRVal> incomingVals, List<RenamePassData> renamePassWorkList) {
-        L.InfoF("RenamePass(%s)\n", bb.getName());
+    private void RenamePass(IRBasicBlock bb, IRBasicBlock pred, List<IRVal> incomingVals, List<RenamePassData> workList) {
+
         Set<IRBasicBlock> visitedSuccs = new HashSet<IRBasicBlock>();
         while (true) {
-            L.Info(" rename " + bb.getName());
+            L.DebugF(" rename " + bb.getName());
             if (bb.getInsts().get(0) instanceof IRInstPhi) {
                 int numEdges = pred.getSuc().size();
 
@@ -285,11 +199,11 @@ public class Mem2Reg implements IRPass {
                     if (inst instanceof IRInstPhi phi) {
                         int allocaNo = phiToAllocaMap.get(phi);
                         for (int i = 0; i < numEdges; i++) {
-                            L.InfoF("assign val `%s` to phi `%s`\n", incomingVals.get(allocaNo).asValue(), phi.getName());
+                            L.DebugF("assign val `%s` to phi `%s`\n", incomingVals.get(allocaNo).asValue(), phi.getName());
                             phi.addIncoming(incomingVals.get(allocaNo), pred);
                         }
                         incomingVals.set(allocaNo, phi);
-                        L.InfoF("Set Alloca Val `%s` = `%s`\n", allocas.get(allocaNo).getName(), phi.getName());
+                        L.DebugF("Set Alloca Val `%s` = `%s`\n", allocas.get(allocaNo).getName(), phi.getName());
                     } else {
                         break;
                     }
@@ -297,7 +211,7 @@ public class Mem2Reg implements IRPass {
             }
 
             if (!visited.add(bb)) {
-                L.InfoF("Skip `%s`\n", bb.getName());
+                L.DebugF("Skip `%s`\n", bb.getName());
                 return;
             }
 
@@ -322,7 +236,7 @@ public class Mem2Reg implements IRPass {
                     if (!allocaLookup.containsKey(dest)) {
                         continue;
                     }
-                    L.InfoF("Set Alloca Val `%s` = `%s`\n", dest.asValue(), SI.getFrom().asValue());
+                    L.DebugF("Set Alloca Val `%s` = `%s`\n", dest.asValue(), SI.getFrom().asValue());
                     incomingVals.set(allocaLookup.get(dest), SI.getFrom());
                     SI.setDeleted();
                 }
@@ -331,6 +245,7 @@ public class Mem2Reg implements IRPass {
             if (bb.getSuc().size() == 0) {
                 return;
             }
+            visitedSuccs.clear();
             var succIter = bb.getSuc().iterator();
             var iterNext = succIter.next();
             visitedSuccs.add(iterNext);
@@ -340,7 +255,7 @@ public class Mem2Reg implements IRPass {
             while (succIter.hasNext()) {
                 var succ = succIter.next();
                 if (visitedSuccs.add(succ)) {
-                    renamePassWorkList.add(new RenamePassData(succ, pred, incomingVals));
+                    workList.add(new RenamePassData(succ, pred, new ArrayList<>(incomingVals)));
                 }
             }
         }
@@ -361,12 +276,19 @@ public class Mem2Reg implements IRPass {
     }
 
     private Set<IRBasicBlock> calculatePhiBlocks(Set<IRBasicBlock> defBlocks, Set<IRBasicBlock> liveInBlocks, BlockNodeBuilder bnb) {
+        // 这种方式有问题，因为有可能会漏掉一些phi节点
+        // 假如block2被插入了一个phi，那么block2也会成为defBlock，但是block2不会被加入到phiBlocks中.
+        // 所以这里需要用到DF+集合
         Set<IRBasicBlock> phiBlocks = new HashSet<>();
+        Queue<IRBasicBlock> queue = new LinkedList<>(defBlocks);
+        Set<IRBasicBlock> visited = new HashSet<>();
         var DF = bnb.getDf();
-        for (var defBlock : defBlocks) {
-            var defBlockNode = reversedBlockMap.get(defBlock);
-            for (var dfBlock : DF.get(defBlockNode)) {
+        while (!queue.isEmpty()) {
+            IRBasicBlock block = queue.poll();
+            if (!visited.add(block)) continue;
+            for (BlockNode dfBlock : DF.get(bnb.re(block))) {
                 if (liveInBlocks.contains(dfBlock.getVal())) {
+                    queue.add(dfBlock.getVal());
                     phiBlocks.add(dfBlock.getVal());
                 }
             }

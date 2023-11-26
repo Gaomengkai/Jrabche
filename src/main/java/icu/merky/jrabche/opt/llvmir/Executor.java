@@ -94,7 +94,7 @@ public class Executor implements Runnable {
                 if (optClass.equals(Mem2Reg.class)) continue; // skip mem2reg
                 if (!optOnMap.containsKey(optClass)) continue;
                 OnWhich onWhich = optOnMap.get(optClass);
-                L.InfoF("Optimizer %s Running.\n", optClass.getAnnotation(OptOn.class).name());
+                L.DebugF("Optimizer %s Running.\n", optClass.getAnnotation(OptOn.class).name());
                 changed |= switch (onWhich) {
                     case Module, Instruction -> false;
                     case Function -> runOnFunction(optClass);
