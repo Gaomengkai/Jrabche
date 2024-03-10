@@ -46,6 +46,7 @@ While: 'while';
 Break: 'break';
 Continue: 'continue';
 Return: 'return';
+For : 'for';
 
 Assign: '=';
 
@@ -54,6 +55,9 @@ Sub: '-';
 Mul: '*';
 Div: '/';
 Mod: '%';
+
+DuoAdd: '++';
+DuoSub: '--';
 
 Eq: '==';
 Neq: '!=';
@@ -75,6 +79,8 @@ Rbracket: ']';
 Lbrace: '{';
 Rbrace: '}';
 
+
+
 Ident: [A-Za-z_][_0-9A-Za-z]*;
 
 Whitespace: [ \t\r\n]+ -> skip;
@@ -85,16 +91,15 @@ BlockComment: '/*' .*? '*/' -> skip;
 compUnit: compUnitItem* EOF;
 compUnitItem: decl | funcDef;
 
-decl: constDecl | varDecl;
+decl: (constDecl | varDecl) Semicolon;
 
-constDecl: Const bType constDef (Comma constDef)* Semicolon;
+constDecl: Const bType constDef (Comma constDef)*;
 
 bType: Int # int | Float # float;
 
 constDef: Ident (Lbracket exp Rbracket)* Assign initVal;
 
-varDecl: bType varDef (Comma varDef)* Semicolon;
-
+varDecl: bType varDef (Comma varDef)*;
 varDef: Ident (Lbracket exp Rbracket)* (Assign initVal)?;
 
 initVal:
@@ -115,12 +120,21 @@ block: Lbrace blockItem* Rbrace;
 
 blockItem: decl | stmt;
 
+forInitClause: exp | varDecl|assignExp;
+
+forIterationExpr:
+    assignExp|exp
+;
+
+assignExp: lVal Assign exp;
+
 stmt:
-	lVal Assign exp Semicolon					# assign
+	assignExp Semicolon					# assign
 	| exp? Semicolon							# exprStmt
 	| block										# blockStmt
 	| If Lparen cond Rparen stmt (Else stmt)?	# ifElse
 	| While Lparen cond Rparen stmt				# while
+    | For Lparen forInitClause? Semicolon cond? Semicolon forIterationExpr? Rparen stmt # for
 	| Break Semicolon							# break
 	| Continue Semicolon						# continue
 	| Return exp? Semicolon						# return;
@@ -145,12 +159,16 @@ floatConst:
 	| HexFloatConst	# hexFloatConst;
 number: intConst | floatConst;
 
+postfixExp:
+    primaryExp							# postfixExp_primary
+    | primaryExp (DuoAdd|DuoSub)		# duoPostfix;
+
 unaryExp:
-	primaryExp							# unaryExp_primary
+	postfixExp							# unaryExp_postfix
+	| (DuoAdd|DuoSub) postfixExp        # duoPrefix
 	| Ident Lparen funcRParams? Rparen	# call
-	| Add unaryExp						# unary_
-	| Sub unaryExp						# unary_
-	| Not unaryExp						# unary_;
+	| (Add|Sub|Not) unaryExp						# unary_;
+
 
 stringConst: StringConst;
 funcRParam: exp | stringConst;

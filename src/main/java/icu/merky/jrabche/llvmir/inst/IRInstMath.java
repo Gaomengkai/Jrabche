@@ -36,6 +36,7 @@ import icu.merky.jrabche.llvmir.values.IRVal;
 
 import java.util.Set;
 
+// Add, Sub, Mul, Div, Rem, Shl, Shr, And, Or, Xor
 public class IRInstMath extends IRInst {
     MathOP mathOP;
     IRVal lhs, rhs;
@@ -90,5 +91,17 @@ public class IRInstMath extends IRInst {
 
     public enum MathOP {
         Invalid, Add, Sub, Mul, Div, Rem, Shl, Shr, And, Or, Xor
+    }
+
+    public MathOP getMathOP() {
+        return mathOP;
+    }
+
+    public IRVal getLhs() {
+        return lhs;
+    }
+
+    public IRVal getRhs() {
+        return rhs;
     }
 }

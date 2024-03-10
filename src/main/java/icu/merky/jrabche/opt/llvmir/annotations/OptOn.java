@@ -47,5 +47,5 @@ public @interface OptOn {
 
     String name();
 
-    enum OptOnEnum {Module, Function, BasicBlock, Instruction}
+    enum OptOnEnum {Module, Function, BasicBlock}
 }

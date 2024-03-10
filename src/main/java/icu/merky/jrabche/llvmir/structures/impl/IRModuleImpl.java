@@ -39,7 +39,7 @@ import icu.merky.jrabche.llvmir.values.IRValGlobal;
 
 import java.util.Map;
 
-public class IRModuleImpl implements IRModule {
+public class IRModuleImpl extends IRModule {
     Map<String, IRVal> globals;
     Map<String, IRFunction> functions;
     Map<String, FunctionType> functionDeclarations;
@@ -74,25 +74,8 @@ public class IRModuleImpl implements IRModule {
         this.functions = functions;
     }
 
-    @Override
-    public String toString() {
+    public String toStringNoDecl() {
         StringBuilder sb = new StringBuilder();
-        // globals.
-        // declare i32 @getarray(i32*)
-        for (Map.Entry<String, FunctionType> entry : functionDeclarations.entrySet()) {
-            String key = entry.getKey();
-            FunctionType fType = entry.getValue();
-            sb.append("declare ").append(fType.getRetType()).append(" @").append(key);
-            sb.append("(");
-            for (int i = 0; i < fType.getParamsType().size(); i++) {
-                sb.append(fType.getParamsType().get(i));
-                if (i != fType.getParamsType().size() - 1)
-                    sb.append(", ");
-            }
-            sb.append(")\n");
-        }
-        sb.append("\n");
-
         // @dd = [constant] global [2 x [3 x i32]] zeroinitializer
         globals.forEach((name, val) -> {
             if (val instanceof IRValGlobal vg) {
@@ -117,6 +100,29 @@ public class IRModuleImpl implements IRModule {
 
         // functions.
         functions.forEach((name, function) -> sb.append(function.toString()));
+        return sb.toString();
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        // globals.
+        // declare i32 @getarray(i32*)
+        for (Map.Entry<String, FunctionType> entry : functionDeclarations.entrySet()) {
+            String key = entry.getKey();
+            FunctionType fType = entry.getValue();
+            sb.append("declare ").append(fType.getRetType()).append(" @").append(key);
+            sb.append("(");
+            for (int i = 0; i < fType.getParamsType().size(); i++) {
+                sb.append(fType.getParamsType().get(i));
+                if (i != fType.getParamsType().size() - 1)
+                    sb.append(", ");
+            }
+            sb.append(")\n");
+        }
+        sb.append("\n");
+
+        sb.append(toStringNoDecl());
         return sb.toString();
     }
 }

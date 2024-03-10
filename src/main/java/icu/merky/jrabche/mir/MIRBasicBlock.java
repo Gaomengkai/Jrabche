@@ -29,15 +29,79 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.fe.visitor;
+package icu.merky.jrabche.mir;
 
-public class FETestConfig {
-    public final static String SY_DIR = "D:\\Code\\2\\compiler2023\\test\\functional";
-    public final static String LIB_SY = "D:\\Code\\2\\compiler2023\\test\\libsysy.a";
-    public final static String LIB_GCC = "D:\\SDK\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\13.2.0\\libgcc.a";
-    public final static String LIB_MINGWEX = "D:\\SDK\\mingw64\\x86_64-w64-mingw32\\lib\\libmingwex.a";
-    public final static String EXE_CLANG = "D:\\SDK\\mingw64\\bin\\clang.exe";
-    public final static String EXE_LLI = "D:\\SDK\\mingw64\\bin\\lli.exe";
-    public static boolean ENABLE_IR_OUTPUT = false;
-    public static boolean ENABLE_IR_OPT = true;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Set;
+
+public class MIRBasicBlock {
+    MIRFunction parent;
+    String name;
+
+    LinkedList<MIRInst> insts;
+
+    Set<MIRBasicBlock> successors = new HashSet<>();
+    Set<MIRBasicBlock> predecessors = new HashSet<>();
+
+    public MIRBasicBlock(MIRFunction parent, String name) {
+        this.parent = parent;
+        this.name = name;
+    }
+
+    void addInst(MIRInst inst) {
+        insts.add(inst);
+    }
+
+    void addInstFirst(MIRInst inst) {
+        insts.addFirst(inst);
+    }
+
+    int getSize() {
+        return insts.size();
+    }
+
+    String getName() {
+        return name;
+    }
+
+    void setName(String name) {
+        this.name = name;
+    }
+
+    LinkedList<MIRInst> getInsts() {
+        return insts;
+    }
+
+    Set<MIRBasicBlock> getSuccessors() {
+        return successors;
+    }
+
+    Set<MIRBasicBlock> getPredecessors() {
+        return predecessors;
+    }
+
+    void setSuccessors(Set<MIRBasicBlock> successors) {
+        this.successors = successors;
+    }
+
+    void setPredecessors(Set<MIRBasicBlock> predecessors) {
+        this.predecessors = predecessors;
+    }
+
+    void addSuccessor(MIRBasicBlock successor) {
+        successors.add(successor);
+    }
+
+    void addPredecessor(MIRBasicBlock predecessor) {
+        predecessors.add(predecessor);
+    }
+
+    public MIRFunction getParent() {
+        return parent;
+    }
+
+    public void setParent(MIRFunction parent) {
+        this.parent = parent;
+    }
 }

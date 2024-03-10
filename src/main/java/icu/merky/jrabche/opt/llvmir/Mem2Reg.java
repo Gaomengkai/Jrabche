@@ -39,6 +39,7 @@ import icu.merky.jrabche.llvmir.values.IRVal;
 import icu.merky.jrabche.llvmir.values.IRValUndef;
 import icu.merky.jrabche.opt.llvmir.algorithms.BlockNode;
 import icu.merky.jrabche.opt.llvmir.algorithms.BlockNodeBuilder;
+import icu.merky.jrabche.opt.llvmir.annotations.DisabledOpt;
 import icu.merky.jrabche.opt.llvmir.annotations.OptOn;
 import icu.merky.jrabche.opt.llvmir.annotations.PassOn;
 import org.antlr.v4.runtime.misc.Pair;
@@ -47,10 +48,11 @@ import java.util.*;
 
 import static icu.merky.jrabche.llvmir.support.InstUtil.RemoveDeletedInstructions;
 import static icu.merky.jrabche.llvmir.support.InstUtil.ReplaceAllUsesWith;
-import static icu.merky.jrabche.logger.JrabcheLogger.L;
+import static icu.merky.jrabche.logger.JrabcheLogger.JL;
 
 @OptOn(value = OptOn.OptOnEnum.Function, changeSSA = true, ssa = false, name = "Memory to Register", afterWhich = {IROptRLSE.class})
 @PassOn(PassOn.on.FUNCTION)
+@DisabledOpt
 public class Mem2Reg implements IRPass {
     IRFunction F;
     ArrayList<IRInstAlloca> allocas = new ArrayList<>();
@@ -178,19 +180,32 @@ public class Mem2Reg implements IRPass {
         visited.clear();
 
         allocas.forEach(IRInstAlloca::setDeleted);
+        for (IRInstAlloca alloca : allocas) {
+            alloca.getUsedBy().forEach(IRInst::setDeleted);
+        }
         for (IRBasicBlock b : F.getBlocks()) {
             RemoveDeletedInstructions(b);
         }
 
+        F.enterSSA();
+
         return false;
     }
 
-    //
+
+    /**
+     * RenamePass - This is the main renaming logic of SSA construction.
+     *
+     * @param bb           current basic block
+     * @param pred         predecessor basic block
+     * @param incomingVals incoming values
+     * @param workList     work list
+     */
     private void RenamePass(IRBasicBlock bb, IRBasicBlock pred, List<IRVal> incomingVals, List<RenamePassData> workList) {
 
         Set<IRBasicBlock> visitedSuccs = new HashSet<IRBasicBlock>();
         while (true) {
-            L.DebugF(" rename " + bb.getName());
+            JL.Debug(" rename " + bb.getName());
             if (bb.getInsts().get(0) instanceof IRInstPhi) {
                 int numEdges = pred.getSuc().size();
 
@@ -199,11 +214,11 @@ public class Mem2Reg implements IRPass {
                     if (inst instanceof IRInstPhi phi) {
                         int allocaNo = phiToAllocaMap.get(phi);
                         for (int i = 0; i < numEdges; i++) {
-                            L.DebugF("assign val `%s` to phi `%s`\n", incomingVals.get(allocaNo).asValue(), phi.getName());
+                            JL.DebugF("assign val `%s` to phi `%s`\n", incomingVals.get(allocaNo).asValue(), phi.getName());
                             phi.addIncoming(incomingVals.get(allocaNo), pred);
                         }
                         incomingVals.set(allocaNo, phi);
-                        L.DebugF("Set Alloca Val `%s` = `%s`\n", allocas.get(allocaNo).getName(), phi.getName());
+                        JL.DebugF("Set Alloca Val `%s` = `%s`\n", allocas.get(allocaNo).getName(), phi.getName());
                     } else {
                         break;
                     }
@@ -211,7 +226,7 @@ public class Mem2Reg implements IRPass {
             }
 
             if (!visited.add(bb)) {
-                L.DebugF("Skip `%s`\n", bb.getName());
+                JL.DebugF("Skip `%s`\n", bb.getName());
                 return;
             }
 
@@ -236,13 +251,13 @@ public class Mem2Reg implements IRPass {
                     if (!allocaLookup.containsKey(dest)) {
                         continue;
                     }
-                    L.DebugF("Set Alloca Val `%s` = `%s`\n", dest.asValue(), SI.getFrom().asValue());
+                    JL.DebugF("Set Alloca Val `%s` = `%s`\n", dest.asValue(), SI.getFrom().asValue());
                     incomingVals.set(allocaLookup.get(dest), SI.getFrom());
                     SI.setDeleted();
                 }
             }
 
-            if (bb.getSuc().size() == 0) {
+            if (bb.getSuc().isEmpty()) {
                 return;
             }
             visitedSuccs.clear();

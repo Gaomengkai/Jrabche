@@ -29,15 +29,57 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.fe.visitor;
+package icu.merky.jrabche.llvmir.support;
 
-public class FETestConfig {
-    public final static String SY_DIR = "D:\\Code\\2\\compiler2023\\test\\functional";
-    public final static String LIB_SY = "D:\\Code\\2\\compiler2023\\test\\libsysy.a";
-    public final static String LIB_GCC = "D:\\SDK\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\13.2.0\\libgcc.a";
-    public final static String LIB_MINGWEX = "D:\\SDK\\mingw64\\x86_64-w64-mingw32\\lib\\libmingwex.a";
-    public final static String EXE_CLANG = "D:\\SDK\\mingw64\\bin\\clang.exe";
-    public final static String EXE_LLI = "D:\\SDK\\mingw64\\bin\\lli.exe";
-    public static boolean ENABLE_IR_OUTPUT = false;
-    public static boolean ENABLE_IR_OPT = true;
+
+import icu.merky.jrabche.llvmir.inst.fake.IRInstCopy;
+import icu.merky.jrabche.support.AutoNewCollectionHashMap;
+
+import java.util.HashSet;
+
+/**
+ * 一个拷贝指令的引用数据。由于在LLVM IR中，一个变量只能被定义一次，这是构成SSA模式的基石。
+ * 但是在Lowering过程中，需要消去Phi指令，这就需要拷贝变量。为了保证拷贝变量的正确性，需要
+ * 一个拷贝指令的引用数据。
+ * <br/>
+ * 例子：
+ * <code>
+ * BB1:
+ * %a = add i32 1, 2
+ * %b = add i32 3, 4
+ * %c = add i32 %a, %b
+ * BB2:
+ * %d = add i32 5, 6
+ * BB3:
+ * %e = PHI i32 [%c, %BB1], [%d, %BB2]
+ * ... using %e ...
+ * </code>
+ * <br/>
+ * 拷贝过后，变成：
+ * <code>
+ * BB1:
+ * %a = add i32 1, 2
+ * %b = add i32 3, 4
+ * %c = add i32 %a, %b
+ * %e = copy i32 %c
+ * BB2:
+ * %d = add i32 5, 6
+ * %e = copy i32 %d
+ * BB3:
+ * ... using %e ...
+ * </code>
+ * 在这种情况下，%e有两个定义。需要一个IRCopy->[IRCopy...]的映射。
+ * 其中key存储在IRCopyRefData中，Value直接就是混合在正常的IR中。
+ */
+public class IRCopyRefData {
+    AutoNewCollectionHashMap<IRInstCopy, IRInstCopy> copyPool = new AutoNewCollectionHashMap<>(HashSet::new);
+
+    public IRInstCopy get(IRInstCopy irCopy) {
+        return copyPool.get(irCopy).iterator().next();
+    }
+
+    public void put(IRInstCopy irCopy, IRInstCopy irCopy1) {
+        copyPool.insert(irCopy, irCopy1);
+    }
+
 }

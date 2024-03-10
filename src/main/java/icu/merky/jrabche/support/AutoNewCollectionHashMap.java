@@ -29,15 +29,23 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.fe.visitor;
+package icu.merky.jrabche.support;
 
-public class FETestConfig {
-    public final static String SY_DIR = "D:\\Code\\2\\compiler2023\\test\\functional";
-    public final static String LIB_SY = "D:\\Code\\2\\compiler2023\\test\\libsysy.a";
-    public final static String LIB_GCC = "D:\\SDK\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\13.2.0\\libgcc.a";
-    public final static String LIB_MINGWEX = "D:\\SDK\\mingw64\\x86_64-w64-mingw32\\lib\\libmingwex.a";
-    public final static String EXE_CLANG = "D:\\SDK\\mingw64\\bin\\clang.exe";
-    public final static String EXE_LLI = "D:\\SDK\\mingw64\\bin\\lli.exe";
-    public static boolean ENABLE_IR_OUTPUT = false;
-    public static boolean ENABLE_IR_OPT = true;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.function.Supplier;
+
+public class AutoNewCollectionHashMap<K, V> extends HashMap<K, Collection<V>> {
+    private final Supplier<Collection<V>> collectionFactory;
+
+    public AutoNewCollectionHashMap(Supplier<Collection<V>> collectionFactory) {
+        this.collectionFactory = collectionFactory;
+    }
+
+    public void insert(K key, V value) {
+        if (!containsKey(key)) {
+            put(key, collectionFactory.get());
+        }
+        get(key).add(value);
+    }
 }

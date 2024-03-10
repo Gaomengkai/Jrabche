@@ -81,7 +81,7 @@ public class BlockNodeBuilder {
 
     public List<BlockNode> getDfo() {
         if (dfo == null)
-            dfo = new DeepFirstOrder<>(root, sizeBBs).getOrder();
+            dfo = new DeepFirstOrder<>(root, root.size).getOrder();
         return dfo;
     }
 

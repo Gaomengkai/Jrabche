@@ -32,7 +32,6 @@
 package icu.merky.jrabche.llvmir.structures.impl;
 
 import icu.merky.jrabche.exceptions.NotImplementedException;
-import icu.merky.jrabche.fe.visitor.FPType;
 import icu.merky.jrabche.llvmir.StaticVariableCounter;
 import icu.merky.jrabche.llvmir.inst.IRInst;
 import icu.merky.jrabche.llvmir.inst.IRInstAlloca;
@@ -40,6 +39,7 @@ import icu.merky.jrabche.llvmir.inst.IRInstBr;
 import icu.merky.jrabche.llvmir.inst.IRInstReturn;
 import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
 import icu.merky.jrabche.llvmir.structures.IRFunction;
+import icu.merky.jrabche.llvmir.types.FPType;
 import icu.merky.jrabche.llvmir.types.FunctionType;
 import icu.merky.jrabche.llvmir.types.IRBasicType;
 import icu.merky.jrabche.llvmir.types.IRType;
@@ -48,7 +48,7 @@ import icu.merky.jrabche.llvmir.values.IRValFP;
 
 import java.util.*;
 
-public class IRFunctionImpl implements IRFunction {
+public class IRFunctionImpl extends IRFunction {
     FunctionType functionType;
     String name;
     List<IRBasicBlock> bbs;
@@ -216,6 +216,10 @@ public class IRFunctionImpl implements IRFunction {
         }
         // 5. interlinked bb
         BuildBBGraph(this);
+    }
+
+    public Map<String, IRValFP> getFp() {
+        return fp;
     }
 
     @Override

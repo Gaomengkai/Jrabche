@@ -31,17 +31,15 @@
 
 package icu.merky.jrabche.opt.llvmir;
 
-import icu.merky.jrabche.llvmir.inst.IRInst;
-import icu.merky.jrabche.llvmir.inst.IRInstAlloca;
+import icu.merky.jrabche.llvmir.inst.*;
 import icu.merky.jrabche.llvmir.structures.IRFunction;
 import icu.merky.jrabche.opt.llvmir.annotations.DisabledOpt;
 import icu.merky.jrabche.opt.llvmir.annotations.OptOn;
 
-import java.util.BitSet;
 import java.util.HashSet;
 import java.util.Set;
 
-@OptOn(value = OptOn.OptOnEnum.Function, name = "Dead Code Elimination v1", ssa = false, afterWhich = {IROptRLSE.class})
+@OptOn(value = OptOn.OptOnEnum.Function, name = "Dead Code Elimination v1", ssa = true, afterWhich = {IROptRLSE.class})
 @DisabledOpt
 public class IROptDCE implements IROpt {
 
@@ -53,26 +51,23 @@ public class IROptDCE implements IROpt {
 
     @Override
     public boolean go() {
-        // optimized for scala alloca, temp reg, etc.
-        // not optimized for array, struct, etc.
-        Set<IRInstAlloca> allocaSet = new HashSet<>();
-        for (var I : F.entryBB().getInsts()) {
-            if (I instanceof IRInstAlloca) {
-                allocaSet.add((IRInstAlloca) I);
-            } else break;
-        }
+
         Set<IRInst> sideEff = new HashSet<>();
+        Set<IRInst> usable = new HashSet<>();
+        // 因为这是在SSA形式中，所有标量的alloca已经消除。
+        // 所有return和call和分支指令是有用的。
+        // 所有load/store/alloca是有用、但是没有副作用的。
         for (var B : F.getBlocks()) {
             for (var I : B.getInsts()) {
-                if (I.isCallInst() || I.isBrInst() || I.isReturnInst()) {
-                    for (var U : I.getUses()) {
-                        if (U instanceof IRInst inst) sideEff.add(inst);
-                    }
+                if (I instanceof IRInstReturn || I instanceof IRInstCall) {
+                    sideEff.add(I);
+                }
+                if (I instanceof IRInstLoad || I instanceof IRInstStore || I instanceof IRInstAlloca) {
+                    usable.add(I);
                 }
             }
         }
-        BitSet live = new BitSet();
-        int i = 0;
+
 
         return false;
     }

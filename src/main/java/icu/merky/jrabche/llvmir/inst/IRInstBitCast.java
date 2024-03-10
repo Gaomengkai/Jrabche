@@ -49,6 +49,23 @@ public class IRInstBitCast extends IRInst {
         return String.format("%s = bitcast %s %s to %s", name, val.getType(), val.asValue(), getType());
     }
 
+    // @Override
+    public IRVal getOperand(int i) {
+        if (i != 0) throw new IndexOutOfBoundsException();
+        return val;
+    }
+
+    // @Override
+    public void setOperand(int i, IRVal val) {
+        if (i != 0) throw new IndexOutOfBoundsException();
+        this.val = val;
+    }
+
+    // @Override
+    public int getNumOperands() {
+        return 1;
+    }
+
     @Override
     public boolean replace(IRVal inst, IRVal newInst) {
         if (val == inst) {

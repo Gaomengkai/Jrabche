@@ -139,7 +139,7 @@ public abstract class IRInst extends IRVal implements Cloneable, DUR, ValueRepre
     }
 
     public boolean isConvertInst() {
-        return instID == InstID.ConvertInst;
+        return instID == InstID.UnaryInst;
     }
 
     public boolean isCallInst() {
@@ -167,12 +167,16 @@ public abstract class IRInst extends IRVal implements Cloneable, DUR, ValueRepre
         return type;
     }
 
+    // public abstract IRVal getOperand(int i);
+    // public abstract void setOperand(int i, IRVal val);
+    // public abstract int getNumOperands();
+
     @Override
     public void setName(String name) {
         super.setName(name.startsWith("%") ? name : "%" + name);
     }
 
-    protected enum InstID {
-        Invalid, AllocaInst, ReturnInst, BrInst, MathInst, ICmpInst, FCmpInst, LoadInst, StoreInst, BitCastInst, GetElementPtrInst, ConvertInst, CallInst, PhiInst,
+    public enum InstID {
+        Invalid, AllocaInst, ReturnInst, BrInst, MathInst, ICmpInst, FCmpInst, LoadInst, StoreInst, BitCastInst, GetElementPtrInst, UnaryInst, CallInst, PhiInst,
     }
 }

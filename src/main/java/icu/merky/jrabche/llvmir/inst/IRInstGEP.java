@@ -45,8 +45,8 @@ import static icu.merky.jrabche.llvmir.types.PointerType.MakePointer;
 public class IRInstGEP extends IRInst {
     // GetElementPtrInst
     private IRVal ptr;
-    private List<IRVal> indices;
-    private PointerType pointerType;
+    private final List<IRVal> indices;
+    private final PointerType pointerType;
 
     public IRInstGEP(IRVal ptr, List<IRVal> indices) {
         super(InstID.GetElementPtrInst, new InvalidType());

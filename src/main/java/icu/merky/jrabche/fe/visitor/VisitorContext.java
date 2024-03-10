@@ -254,7 +254,7 @@ public class VisitorContext {
         }
     }
 
-    class IC {
+    static class IC {
         /*
             // only for local array def.
     std::vector<size_t>        curShape;

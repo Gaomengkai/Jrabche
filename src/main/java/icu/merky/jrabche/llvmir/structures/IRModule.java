@@ -36,16 +36,16 @@ import icu.merky.jrabche.llvmir.values.IRVal;
 
 import java.util.Map;
 
-public interface IRModule {
-    Map<String, FunctionType> getFunctionDeclarations();
+public abstract class IRModule {
+    public abstract Map<String, FunctionType> getFunctionDeclarations();
 
-    void setFunctionDeclarations(Map<String, FunctionType> functionDeclarations);
+    public abstract void setFunctionDeclarations(Map<String, FunctionType> functionDeclarations);
 
-    Map<String, IRVal> getGlobals();
+    public abstract Map<String, IRVal> getGlobals();
 
-    void setGlobals(Map<String, IRVal> globals);
+    public abstract void setGlobals(Map<String, IRVal> globals);
 
-    Map<String, IRFunction> getFunctions();
+    public abstract Map<String, IRFunction> getFunctions();
 
-    void setFunctions(Map<String, IRFunction> functions);
+    public abstract void setFunctions(Map<String, IRFunction> functions);
 }

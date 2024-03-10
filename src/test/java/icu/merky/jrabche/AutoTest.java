@@ -34,11 +34,10 @@ package icu.merky.jrabche;
 import icu.merky.jrabche.fe.Preprocessor;
 import icu.merky.jrabche.fe.parser.SylangLexer;
 import icu.merky.jrabche.fe.parser.SylangParser;
-import icu.merky.jrabche.fe.parser.SylangVisitor;
 import icu.merky.jrabche.fe.visitor.SylangVisitorImpl;
 import icu.merky.jrabche.llvmir.IRBuilder;
 import icu.merky.jrabche.llvmir.IRBuilderImpl;
-import icu.merky.jrabche.llvmir.structures.IRModule;
+import icu.merky.jrabche.llvmir.structures.impl.IRModuleImpl;
 import icu.merky.jrabche.logger.JrabcheLogger;
 import icu.merky.jrabche.opt.llvmir.Executor;
 import org.antlr.v4.runtime.*;
@@ -55,7 +54,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static icu.merky.jrabche.fe.visitor.FETestConfig.*;
-import static icu.merky.jrabche.logger.JrabcheLogger.L;
+import static icu.merky.jrabche.logger.JrabcheLogger.JL;
 
 public class AutoTest {
     private final File sydir = new File(SY_DIR);
@@ -66,7 +65,7 @@ public class AutoTest {
 
         char[] stdout = Utils.readFile(tempOutFile.getAbsolutePath());
         var stdoutStr = new String(stdout);
-        if (!stdoutStr.endsWith("\n") && stdoutStr.length() != 0) stdoutStr += "\n";
+        if (!stdoutStr.endsWith("\n") && !stdoutStr.isEmpty()) stdoutStr += "\n";
         stdoutStr += exitValue;
         stdoutStr += "\n";
         Matcher stdoutMatcher = endl_pattern.matcher(stdoutStr);
@@ -92,15 +91,15 @@ public class AutoTest {
         TokenStream tokens = new CommonTokenStream(lexer);
         SylangParser parser = new SylangParser(tokens);
         IRBuilder builder = new IRBuilderImpl();
-        SylangVisitor<Void> visitor = new SylangVisitorImpl(builder);
+        var visitor = new SylangVisitorImpl(builder);
         visitor.visit(parser.compUnit());
-        IRModule module = builder.getModule();
+        IRModuleImpl module = (IRModuleImpl) builder.getModule();
         if (enableOpt) {
             new Executor(module).run();
         }
         String ir = module.toString();
         if (ENABLE_IR_OUTPUT)
-            System.out.println(ir);
+            System.out.println(module.toStringNoDecl());
 
         // write to $temp$/test.ll
         Utils.writeFile(tempFile.getAbsolutePath(), ir);
@@ -189,7 +188,7 @@ public class AutoTest {
         } else {
             noPattern = "%03d";
         }
-        L.InfoF("Testing %s\n", String.format(noPattern, no));
+        JL.InfoF("Testing %s\n", String.format(noPattern, no));
         // search %2d*.sy
         var syFiles = getAllSyFile();
         var syFile = syFiles.stream().filter(f -> f.getName().startsWith(String.format(noPattern, no))).findFirst().orElse(null);
@@ -207,17 +206,13 @@ public class AutoTest {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            L.InfoF("Cost %dms\n", System.currentTimeMillis() - start);
+            JL.InfoF("Cost %dms\n", System.currentTimeMillis() - start);
         }
-    }
-
-    void testSpec(int no, boolean useEXE) {
-        testSpec(no, useEXE, false);
     }
 
     @Test
     void testNo0_25() {
-        L.setLevel(JrabcheLogger.LoggerLevel.I);
+        JL.setLevel(JrabcheLogger.LoggerLevel.I);
         ENABLE_IR_OUTPUT = false;
         for (int i = 0; i <= 25; i++) {
             testSpec(i, false, ENABLE_IR_OPT);
@@ -226,7 +221,7 @@ public class AutoTest {
 
     @Test
     void testNo26_50() {
-        L.setLevel(JrabcheLogger.LoggerLevel.I);
+        JL.setLevel(JrabcheLogger.LoggerLevel.I);
         ENABLE_IR_OUTPUT = false;
         for (int i = 26; i <= 50; i++) {
             testSpec(i, false, ENABLE_IR_OPT);
@@ -235,7 +230,7 @@ public class AutoTest {
 
     @Test
     void testNo51_75() {
-        L.setLevel(JrabcheLogger.LoggerLevel.I);
+        JL.setLevel(JrabcheLogger.LoggerLevel.I);
         ENABLE_IR_OUTPUT = false;
         for (int i = 51; i <= 75; i++) {
             testSpec(i, false, ENABLE_IR_OPT);
@@ -244,7 +239,7 @@ public class AutoTest {
 
     @Test
     void testNo76_99() {
-        L.setLevel(JrabcheLogger.LoggerLevel.I);
+        JL.setLevel(JrabcheLogger.LoggerLevel.I);
         ENABLE_IR_OUTPUT = false;
         for (int i = 76; i <= 99; i++) {
             if (i == 95) testSpec(i, true, ENABLE_IR_OPT);
@@ -265,7 +260,7 @@ public class AutoTest {
     @Test
     void testOne() {
         ENABLE_IR_OUTPUT = true;
-        L.setLevel(JrabcheLogger.LoggerLevel.I);
-        testSpec(27, false, ENABLE_IR_OPT);
+        JL.setLevel(JrabcheLogger.LoggerLevel.I);
+        testSpec(402, false, ENABLE_IR_OPT);
     }
 }

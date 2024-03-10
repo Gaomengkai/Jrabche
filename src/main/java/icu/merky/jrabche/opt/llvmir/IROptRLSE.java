@@ -45,7 +45,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static icu.merky.jrabche.logger.JrabcheLogger.L;
+import static icu.merky.jrabche.logger.JrabcheLogger.JL;
 
 /**
  * Redundant Load Store Elimination
@@ -75,18 +75,18 @@ public class IROptRLSE implements IRPass {
             for (var I : B.getInsts()) {
                 if (I instanceof IRInstAlloca) {
                     // zero use, delete.
-                    if (I.getUsedBy().size() == 0) {
-                        L.Debug("RLSE: delete alloca " + I);
+                    if (I.getUsedBy().isEmpty()) {
+                        JL.Debug("RLSE: delete alloca " + I);
                         I.setDeleted();
                         changed = true;
                     }
                     // only store, delete.
                     if (I.getUsedBy().stream().allMatch(inst -> inst instanceof IRInstStore)) {
                         I.getUsedBy().forEach(inst -> {
-                            L.Debug("RLSE: delete  " + inst);
+                            JL.Debug("RLSE: delete  " + inst);
                             inst.setDeleted();
                         });
-                        L.Debug("RLSE: delete alloca " + I);
+                        JL.Debug("RLSE: delete alloca " + I);
                         I.setDeleted();
                         changed = true;
                     }
@@ -131,7 +131,7 @@ public class IROptRLSE implements IRPass {
                 }
             } else {
                 // fast path
-                if (loadReplaceMap.size() == 0) {
+                if (loadReplaceMap.isEmpty()) {
                     continue;
                 }
                 // other inst
@@ -157,7 +157,7 @@ public class IROptRLSE implements IRPass {
             for (var I : B.getInsts()) {
                 if (I instanceof IRInstLoad load) {
                     if (!usedLoads.contains(load)) {
-                        L.Debug("RLSE: delete load   " + load);
+                        JL.Debug("RLSE: delete load   " + load);
                         load.setDeleted();
                         changedInner = true;
                         changedOuter = true;
@@ -176,7 +176,7 @@ public class IROptRLSE implements IRPass {
                 if (store.getTo() instanceof IRInstAlloca alloca) {
                     IRInstStore oldStore = storeMap.getOrDefault(alloca, null);
                     if (oldStore != null) {
-                        L.Debug("RLSE: delete store  " + oldStore);
+                        JL.Debug("RLSE: delete store  " + oldStore);
                         oldStore.setDeleted();
                         changedOuter = true;
                     }

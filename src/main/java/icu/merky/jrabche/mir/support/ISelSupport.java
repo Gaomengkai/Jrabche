@@ -29,15 +29,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.fe.visitor;
+package icu.merky.jrabche.mir.support;
 
-public class FETestConfig {
-    public final static String SY_DIR = "D:\\Code\\2\\compiler2023\\test\\functional";
-    public final static String LIB_SY = "D:\\Code\\2\\compiler2023\\test\\libsysy.a";
-    public final static String LIB_GCC = "D:\\SDK\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\13.2.0\\libgcc.a";
-    public final static String LIB_MINGWEX = "D:\\SDK\\mingw64\\x86_64-w64-mingw32\\lib\\libmingwex.a";
-    public final static String EXE_CLANG = "D:\\SDK\\mingw64\\bin\\clang.exe";
-    public final static String EXE_LLI = "D:\\SDK\\mingw64\\bin\\lli.exe";
-    public static boolean ENABLE_IR_OUTPUT = false;
-    public static boolean ENABLE_IR_OPT = true;
+public interface ISelSupport {
 }

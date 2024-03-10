@@ -42,7 +42,7 @@ public class IRInstUnary extends IRInst {
     IRVal v1;
 
     public IRInstUnary(UnaryOP unaryOP, IRVal v1) {
-        super(null, InstID.ConvertInst, unaryOP == UnaryOP.SiToFp ? new FloatType() : new IntType());
+        super(null, InstID.UnaryInst, unaryOP == UnaryOP.SiToFp ? new FloatType() : new IntType());
         this.unaryOP = unaryOP;
         this.v1 = v1;
     }

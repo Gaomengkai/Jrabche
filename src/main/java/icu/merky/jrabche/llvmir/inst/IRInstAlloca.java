@@ -60,6 +60,21 @@ public class IRInstAlloca extends IRInst {
         return getName() + " = alloca " + ((PointerType) type).getElementType();
     }
 
+    // @Override
+    public IRVal getOperand(int i) {
+        throw new UnsupportedOperationException();
+    }
+
+    // @Override
+    public void setOperand(int i, IRVal val) {
+        throw new UnsupportedOperationException();
+    }
+
+    // @Override
+    public int getNumOperands() {
+        return 0;
+    }
+
     @Override
     public boolean replace(IRVal inst, IRVal newInst) {
         return false;

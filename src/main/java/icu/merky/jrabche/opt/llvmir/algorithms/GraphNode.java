@@ -38,10 +38,10 @@ import java.util.Set;
 
 public class GraphNode<T> {
     T val;
-    private Set<GraphNode<T>> successors;
+    private final Set<GraphNode<T>> successors;
 
 
-    private Set<GraphNode<T>> predecessor;
+    private final Set<GraphNode<T>> predecessor;
 
     public GraphNode(T val) {
         this.val = val;

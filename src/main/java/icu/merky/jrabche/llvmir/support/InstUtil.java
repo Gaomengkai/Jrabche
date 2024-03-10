@@ -40,6 +40,7 @@ import java.util.Iterator;
 public class InstUtil {
     /**
      * Replace all uses of an instruction with a new value
+     * <h3>MUST FIRST RUN <code>BuildUses</code> PASS</h3>
      * <br>
      * e.g.: <code>%v1 = load i32, ptr %v2<br>%v3 = add i32 ...,<b>%v1</b></code>
      * <br>

@@ -29,15 +29,40 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.fe.visitor;
+package icu.merky.jrabche.mir.support;
 
-public class FETestConfig {
-    public final static String SY_DIR = "D:\\Code\\2\\compiler2023\\test\\functional";
-    public final static String LIB_SY = "D:\\Code\\2\\compiler2023\\test\\libsysy.a";
-    public final static String LIB_GCC = "D:\\SDK\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\13.2.0\\libgcc.a";
-    public final static String LIB_MINGWEX = "D:\\SDK\\mingw64\\x86_64-w64-mingw32\\lib\\libmingwex.a";
-    public final static String EXE_CLANG = "D:\\SDK\\mingw64\\bin\\clang.exe";
-    public final static String EXE_LLI = "D:\\SDK\\mingw64\\bin\\lli.exe";
-    public static boolean ENABLE_IR_OUTPUT = false;
-    public static boolean ENABLE_IR_OPT = true;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import static icu.merky.jrabche.mir.support.ArithmeticSupport.isPowerOf2;
+
+class ArithmeticSupportTest {
+
+    @Test
+    void isPowerOf2Test() {
+        int[] trues = {
+                1, 2, 4, 8, 16, 32, 64, 128, 256, 512,
+                0x40000000, 0x80000000,
+        };
+        int[] falses = {
+                5, 6, 7, 9, 12, 18, 0x50000000
+        };
+        for (int i : trues) {
+            Assertions.assertTrue(isPowerOf2(i));
+        }
+        for (int i : falses) {
+            Assertions.assertFalse(isPowerOf2(i));
+        }
+    }
+
+    @Test
+    void log2iTest() {
+        int[] trues = {
+                1, 2, 4, 8, 16, 32, 64, 128, 256, 512,
+                0x40000000,
+        };
+        for (int i : trues) {
+            Assertions.assertEquals((int) (Math.log(i) / Math.log(2)), ArithmeticSupport.log2i(i), String.valueOf(i));
+        }
+    }
 }

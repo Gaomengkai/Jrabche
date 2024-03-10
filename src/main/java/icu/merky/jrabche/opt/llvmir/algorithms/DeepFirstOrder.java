@@ -47,10 +47,12 @@ public class DeepFirstOrder<T, V extends GraphNode<T>> {
     Map<V, Set<V>> edges;
     Map<V, Integer> order = new HashMap<>();
     int c = 0;
+    int size;
 
     public DeepFirstOrder(V root, int size) {
         visited = new HashSet<>(size);
         c = size - 1;
+        this.size = size;
         edges = new HashMap<>(size);
         search(root);
     }
@@ -69,8 +71,8 @@ public class DeepFirstOrder<T, V extends GraphNode<T>> {
     }
 
     public List<V> getOrder() {
-        List<V> res = new ArrayList<>(order.size());
-        for (int i = 0; i < order.size(); i++) {
+        List<V> res = new ArrayList<>(this.size);
+        for (int i = 0; i < this.size; i++) {
             res.add(null);
         }
         for (var entry : order.entrySet()) {

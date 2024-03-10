@@ -157,6 +157,10 @@ public class BlockNode extends GraphNode<IRBasicBlock> {
         return new InternalBNIter(dfo);
     }
 
+    public IRBasicBlock getBlock() {
+        return val;
+    }
+
     public static Iterator<BlockNode> DFOIter(BlockNodeBuilder bnb) {
         List<BlockNode> dfo = bnb.getDfo();
         return new InternalBNIter(dfo);

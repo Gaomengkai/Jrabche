@@ -1,43 +1,59 @@
 package icu.merky.jrabche.llvmir.structures;
 
-import icu.merky.jrabche.fe.visitor.FPType;
 import icu.merky.jrabche.llvmir.inst.IRInstAlloca;
+import icu.merky.jrabche.llvmir.types.FPType;
 import icu.merky.jrabche.llvmir.types.FunctionType;
 import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.values.IRValFP;
 
 import java.util.List;
 
-public interface IRFunction {
-    FunctionType getFunctionType();
+public abstract class IRFunction {
+    // SSA defines
+    boolean inSSA = false;
 
-    String getName();
+    public void leaveSSA() {
+        inSSA = false;
+    }
 
-    void setName(String name);
+    public boolean isInSSA() {
+        return inSSA;
+    }
 
-    void addParam(String name, IRType type);
+    public void enterSSA() {
+        inSSA = true;
+    }
 
-    IRValFP addFP(FPType ty);
+    // IR defines
+    public abstract FunctionType getFunctionType();
 
-    IRBasicBlock addBlock();
+    public abstract String getName();
 
-    void setCurrentBlock(String name);
+    public abstract void setName(String name);
 
-    void setCurrentBlock(IRBasicBlock block);
+    public abstract void addParam(String name, IRType type);
 
-    IRBasicBlock curBB();
+    public abstract IRValFP addFP(FPType ty);
 
-    IRBasicBlock entryBB();
+    public abstract IRBasicBlock addBlock();
 
-    IRBasicBlock getBlock(String name);
+    public abstract void setCurrentBlock(String name);
 
-    List<IRBasicBlock> getBlocks();
+    public abstract void setCurrentBlock(IRBasicBlock block);
 
-    void removeBlock(IRBasicBlock block);
+    public abstract IRBasicBlock curBB();
 
-    IRInstAlloca addAlloca(IRInstAlloca inst);
+    public abstract IRBasicBlock entryBB();
 
-    List<IRInstAlloca> getAlloca();
+    public abstract IRBasicBlock getBlock(String name);
 
-    void finishFunction();
+    public abstract List<IRBasicBlock> getBlocks();
+
+    public abstract void removeBlock(IRBasicBlock block);
+
+    public abstract IRInstAlloca addAlloca(IRInstAlloca inst);
+
+    public abstract List<IRInstAlloca> getAlloca();
+
+    public abstract void finishFunction();
 }

@@ -29,9 +29,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.fe.visitor;
+package icu.merky.jrabche.mir;
 
-import icu.merky.jrabche.llvmir.types.IRType;
-
-public record FPType(IRType type, String name) {
+public enum MIRRegTag {
+    AREG,
+    RETREG
 }

@@ -29,15 +29,26 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.fe.visitor;
+package icu.merky.jrabche.opt.llvmir;
 
-public class FETestConfig {
-    public final static String SY_DIR = "D:\\Code\\2\\compiler2023\\test\\functional";
-    public final static String LIB_SY = "D:\\Code\\2\\compiler2023\\test\\libsysy.a";
-    public final static String LIB_GCC = "D:\\SDK\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\13.2.0\\libgcc.a";
-    public final static String LIB_MINGWEX = "D:\\SDK\\mingw64\\x86_64-w64-mingw32\\lib\\libmingwex.a";
-    public final static String EXE_CLANG = "D:\\SDK\\mingw64\\bin\\clang.exe";
-    public final static String EXE_LLI = "D:\\SDK\\mingw64\\bin\\lli.exe";
-    public static boolean ENABLE_IR_OUTPUT = false;
-    public static boolean ENABLE_IR_OPT = true;
+import icu.merky.jrabche.llvmir.structures.IRFunction;
+import icu.merky.jrabche.llvmir.structures.IRModule;
+import icu.merky.jrabche.opt.llvmir.annotations.DisabledOpt;
+
+@DisabledOpt
+public class ExitSSA implements IRPass {
+    IRModule module;
+
+    public ExitSSA(IRModule module) {
+        this.module = module;
+    }
+
+    @Override
+    public boolean go() {
+        return false;
+    }
+
+    public static void go(IRFunction F) {
+
+    }
 }

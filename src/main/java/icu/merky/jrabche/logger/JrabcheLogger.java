@@ -35,10 +35,10 @@ public class JrabcheLogger {
     public enum LoggerLevel {D, I, W, E}
 
     LoggerLevel loggerLevel = LoggerLevel.D;
-    public static JrabcheLogger L;
+    public static JrabcheLogger JL;
 
     static {
-        L = new JrabcheLogger();
+        JL = new JrabcheLogger();
     }
 
     public JrabcheLogger() {

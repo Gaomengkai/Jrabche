@@ -41,9 +41,10 @@ import java.util.Iterator;
 import java.util.Map;
 
 import static icu.merky.jrabche.llvmir.structures.impl.IRFunctionImpl.BuildBBGraph;
-import static icu.merky.jrabche.logger.JrabcheLogger.L;
+import static icu.merky.jrabche.logger.JrabcheLogger.JL;
 
 @OptOn(value = OptOn.OptOnEnum.Function, name = "Block Rearrange", ssa = false)
+//@DisabledOpt
 public class IROptBlockRearrange implements IROpt {
     private final IRFunction F;
     private int mergeCount = 0;
@@ -66,7 +67,7 @@ public class IROptBlockRearrange implements IROpt {
             changed |= innerChanged;
         } while (innerChanged);
         if (mergeCount + removeCount > 0)
-            L.Debug("BR  :func=" + F.getName() + "\tmerge " + mergeCount + " blocks, remove " + removeCount + " blocks");
+            JL.Debug("BR  :func=" + F.getName() + "\tmerge " + mergeCount + " blocks, remove " + removeCount + " blocks");
         return changed;
     }
 

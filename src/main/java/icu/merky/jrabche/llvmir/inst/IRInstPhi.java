@@ -37,6 +37,7 @@ import icu.merky.jrabche.llvmir.values.IRVal;
 import org.antlr.v4.runtime.misc.Pair;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -83,8 +84,7 @@ public class IRInstPhi extends IRInst {
 
     @Override
     public Set<IRVal> getUses() {
-        // todo.
-        return Set.of();
+        return new HashSet<>(incoming.values());
     }
 
     @Override
