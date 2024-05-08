@@ -39,6 +39,7 @@ import icu.merky.jrabche.llvmir.structures.impl.IRFunctionImpl;
 import icu.merky.jrabche.opt.llvmir.annotations.DisabledOpt;
 import icu.merky.jrabche.opt.llvmir.annotations.OptOn;
 import icu.merky.jrabche.utils.ClassFinder;
+import icu.merky.jrabche.utils.ClassFinderImpl2;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -48,14 +49,14 @@ import java.util.*;
 import static icu.merky.jrabche.RuntimeConfig.CFG_ENABLE_OUTPUT_RENAME;
 import static icu.merky.jrabche.logger.JrabcheLogger.JL;
 
-public class Executor implements Runnable {
+public class OptExecutor implements Runnable {
 
     List<Class<?>> optClassesNoSSA = new ArrayList<>();
     List<Class<?>> optClassesSSA = new ArrayList<>();
     Map<Class<?>, OnWhich> optOnMap = new HashMap<>();
     IRModule M;
 
-    public Executor(IRModule module) {
+    public OptExecutor(IRModule module) {
         this.M = module;
     }
 
@@ -65,7 +66,8 @@ public class Executor implements Runnable {
             Map<Class<?>, List<Class<?>>> topoMapNoSSA = new HashMap<>();
             Map<Class<?>, List<Class<?>>> topoMapSSA = new HashMap<>();
             // do the optimization.
-            ClassFinder.getClassesInPackage("icu.merky.jrabche.opt.llvmir").stream().filter(clazz -> clazz.isAnnotationPresent(OptOn.class)).filter(clazz -> !clazz.isAnnotationPresent(DisabledOpt.class)).forEach(clazz -> {
+            ClassFinder classFinder = new ClassFinderImpl2();
+            classFinder.getClassesInPackage("icu.merky.jrabche.opt.llvmir").stream().filter(clazz -> clazz.isAnnotationPresent(OptOn.class)).filter(clazz -> !clazz.isAnnotationPresent(DisabledOpt.class)).forEach(clazz -> {
                 OptOn optOn = clazz.getAnnotation(OptOn.class);
                 boolean ssa = optOn.ssa();
                 if (ssa) topoMapSSA.put(clazz, List.of(optOn.afterWhich()));

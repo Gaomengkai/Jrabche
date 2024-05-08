@@ -31,7 +31,7 @@
 
 package icu.merky.jrabche.llvmir.inst;
 
-import icu.merky.jrabche.fe.helper.FEVisitorHelper;
+import icu.merky.jrabche.llvmir.support.IRCompileTimeCalc;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
 import java.util.Set;
@@ -42,7 +42,7 @@ public class IRInstMath extends IRInst {
     IRVal lhs, rhs;
 
     public IRInstMath(MathOP mathOP, IRVal v1, IRVal v2) {
-        super(null, InstID.MathInst, FEVisitorHelper.ResolveType(v1.getType(), v2.getType()).toIRType());
+        super(null, InstID.MathInst, IRCompileTimeCalc.ResolveType(v1.getType(), v2.getType()).toIRType());
         this.mathOP = mathOP;
         this.lhs = v1;
         this.rhs = v2;
@@ -64,13 +64,13 @@ public class IRInstMath extends IRInst {
     }
 
     @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (lhs.equals(inst)) {
-            lhs = newInst;
+    public boolean replace(IRVal oldVal, IRVal newVal) {
+        if (lhs.equals(oldVal)) {
+            lhs = newVal;
             return true;
         }
-        if (rhs.equals(inst)) {
-            rhs = newInst;
+        if (rhs.equals(oldVal)) {
+            rhs = newVal;
             return true;
         }
         return false;

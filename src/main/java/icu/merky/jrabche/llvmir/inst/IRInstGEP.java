@@ -102,14 +102,14 @@ public class IRInstGEP extends IRInst {
     }
 
     @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (ptr.equals(inst)) {
-            ptr = newInst;
+    public boolean replace(IRVal oldVal, IRVal newVal) {
+        if (ptr.equals(oldVal)) {
+            ptr = newVal;
             return true;
         }
         for (int i = 0; i < indices.size(); i++) {
-            if (indices.get(i).equals(inst)) {
-                indices.set(i, newInst);
+            if (indices.get(i).equals(oldVal)) {
+                indices.set(i, newVal);
                 return true;
             }
         }

@@ -29,32 +29,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.mir;
+package icu.merky.jrabche.llvmir.inst;
 
-public enum MIRInstEnum {
-    MIRJ,
-    MIRB,
-    MIRLoad, MIRStore,
-    MIRAdd, MIRSub, MIRMul,
-    MIRShl, MIRLShr, MIRAShr,
-    MIRAnd, MIROr, MIRXor,
-    MIRSDiv, MIRUDiv, MIRSRem, MIRURem,
+import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
 
-    // Compare
-    MIREq, MIRNe, MIRLt, MIRGt, MIRLe, MIRGe,
-    // Float Compare
-    MIRFEq, MIRFNe, MIRFLt, MIRFGt, MIRFLe, MIRFGe,
+import java.util.Set;
 
-    // Float
-    MIRFAdd, MIRFSub, MIRFMul, MIRFDiv, MIRFRem,
+public interface BlockReplaceable {
+    boolean replaceBlock(IRBasicBlock oldBlock, IRBasicBlock newBlock);
 
-    MIRZExt, MIRSExt,
-    MIRF2S, MIRS2F,
-
-    MIRReturn,
-
-    // IR Special
-    MIRCopy, MIRLoadAdr,
-    // Stack virtual operation
-    MIRStackStore, MIRStackLoad, MIRStackSave, MIRStackRestore,
+    Set<IRBasicBlock> getReplaceableBlocks();
 }

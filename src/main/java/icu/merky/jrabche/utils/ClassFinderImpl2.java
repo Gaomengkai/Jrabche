@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Gaomengkai
+ * Copyright (c) 2023-2024, Gaomengkai
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -29,8 +29,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.mir;
+package icu.merky.jrabche.utils;
 
-public class MIRModule {
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
+public class ClassFinderImpl2 implements ClassFinder {
+    @Override
+    public List<Class<?>> getClassesInPackage(String packageName) throws ClassNotFoundException, IOException {
+        Set<Class<?>> classes = ClassScanner.getClasses(packageName);
+        return new ArrayList<>(classes);
+    }
 }

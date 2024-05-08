@@ -31,7 +31,10 @@
 
 package icu.merky.jrabche.mir;
 
+import icu.merky.jrabche.llvmir.values.IRVal;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class MIRFunction {
     MIRModule parent;
@@ -39,5 +42,11 @@ public class MIRFunction {
     ArrayList<MIRBasicType> paramTypes;
 
     ArrayList<MIRBasicBlock> blocks;
+
+    HashMap<Long, MIRReg> regs;
+
+    HashMap<IRVal, Long> vRegMap;
+
+
 
 }

@@ -67,9 +67,9 @@ public class IRInstBitCast extends IRInst {
     }
 
     @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (val == inst) {
-            val = newInst;
+    public boolean replace(IRVal oldVal, IRVal newVal) {
+        if (val == oldVal) {
+            val = newVal;
             return true;
         }
         return false;

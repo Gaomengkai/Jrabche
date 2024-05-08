@@ -34,13 +34,13 @@ package icu.merky.jrabche.fe.visitor;
 import icu.merky.jrabche.exceptions.CompileException;
 import icu.merky.jrabche.exceptions.NotImplementedException;
 import icu.merky.jrabche.fe.helper.ConstInitList;
-import icu.merky.jrabche.fe.helper.FEVisitorHelper;
 import icu.merky.jrabche.fe.parser.SylangParser;
 import icu.merky.jrabche.fe.parser.SylangVisitor;
 import icu.merky.jrabche.llvmir.IRBuilder;
 import icu.merky.jrabche.llvmir.inst.*;
 import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
 import icu.merky.jrabche.llvmir.structures.impl.IRFunctionImpl;
+import icu.merky.jrabche.llvmir.support.IRCompileTimeCalc;
 import icu.merky.jrabche.llvmir.types.*;
 import icu.merky.jrabche.llvmir.values.*;
 import icu.merky.jrabche.utils.Finished;
@@ -169,12 +169,12 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
 
         var shape = ctx.exp().stream().collect(ArrayList<Integer>::new, (list, exp) -> {
             exp.accept(this);
-            list.add(GetIntNumFromCVal((IRValConst) C.lastVal));
+            list.add(IRCompileTimeCalc.GetIntNumFromCVal((IRValConst) C.lastVal));
         }, ArrayList::addAll);
 
         if (shape.isEmpty()) {
             // scalar
-            IRValConst converted = FEVisitorHelper.DoCompileTimeConversion(atomType, initVal);
+            IRValConst converted = IRCompileTimeCalc.DoCompileTimeConversion(atomType, initVal);
             C.pushConst(name, converted);
         } else {
             // array
@@ -317,7 +317,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
                 // scalar
                 if (ctx.initVal() != null) {
                     ctx.initVal().accept(this);
-                    IRValConst converted = FEVisitorHelper.DoCompileTimeConversion(atomType, C.lastVal);
+                    IRValConst converted = IRCompileTimeCalc.DoCompileTimeConversion(atomType, C.lastVal);
                     C.pushVar(name, converted);
                 } else {
                     C.pushVar(name, IRValConstInt.Zero(C.bType.toBasicType()));
@@ -534,7 +534,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
         try (AutoDive ignored = new AutoDive(C.isConst, true)) {
             shape = exp2.stream().collect(ArrayList::new, (list, exp) -> {
                 exp.accept(this);
-                list.add(GetIntNumFromCVal((IRValConst) C.lastVal));
+                list.add(IRCompileTimeCalc.GetIntNumFromCVal((IRValConst) C.lastVal));
             }, ArrayList::addAll);
         } catch (Exception e) {
             shape = Collections.emptyList();
@@ -694,7 +694,7 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
                     && indices.stream().allMatch(x -> x instanceof IRValConstInt)
             ) {
                 C.lastVal = carr.get(indices.stream().collect(ArrayList<Integer>::new, (list, irVal) -> {
-                    list.add(GetIntNumFromCVal((IRValConst) irVal));
+                    list.add(IRCompileTimeCalc.GetIntNumFromCVal((IRValConst) irVal));
                 }, ArrayList::addAll));
             }
             // need load, array
@@ -1279,8 +1279,10 @@ public class SylangVisitorImpl extends AbstractParseTreeVisitor<Void> implements
 
         ctx.lAndExp().accept(this);
         DoRuntimeBoolConversion(C, C.lastVal);
-
+        // fixit. bug. but we shouldn't fix it while the project is running well.
+        // C.needLoad.ascend();
         C.needLoad.dive(false);
+        // bug end.
         return null;
     }
 

@@ -82,14 +82,14 @@ public class IRInstIcmp extends IRInst {
     }
 
     @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
+    public boolean replace(IRVal oldVal, IRVal newVal) {
         boolean replaced = false;
-        if (lhs == inst) {
-            lhs = newInst;
+        if (lhs == oldVal) {
+            lhs = newVal;
             replaced = true;
         }
-        if (rhs == inst) {
-            rhs = newInst;
+        if (rhs == oldVal) {
+            rhs = newVal;
             replaced = true;
         }
         return replaced;

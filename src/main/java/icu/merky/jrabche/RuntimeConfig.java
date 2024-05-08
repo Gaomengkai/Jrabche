@@ -32,5 +32,5 @@
 package icu.merky.jrabche;
 
 public class RuntimeConfig {
-    public static final boolean CFG_ENABLE_OUTPUT_RENAME = true;
+    public static final boolean CFG_ENABLE_OUTPUT_RENAME = false;
 }

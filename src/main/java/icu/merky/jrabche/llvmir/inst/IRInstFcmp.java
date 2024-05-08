@@ -75,13 +75,13 @@ public class IRInstFcmp extends IRInst {
     }
 
     @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (lhs == inst) {
-            lhs = newInst;
+    public boolean replace(IRVal oldVal, IRVal newVal) {
+        if (lhs == oldVal) {
+            lhs = newVal;
             return true;
         }
-        if (rhs == inst) {
-            rhs = newInst;
+        if (rhs == oldVal) {
+            rhs = newVal;
             return true;
         }
         return false;

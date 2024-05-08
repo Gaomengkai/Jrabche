@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Gaomengkai
+ * Copyright (c) 2023-2024, Gaomengkai
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,11 +31,22 @@
 
 package icu.merky.jrabche.mir;
 
+import icu.merky.jrabche.exceptions.NotImplementedException;
 import icu.merky.jrabche.llvmir.inst.IRInst;
 import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
+import icu.merky.jrabche.llvmir.structures.IRFunction;
+import icu.merky.jrabche.llvmir.types.FunctionType;
+import icu.merky.jrabche.llvmir.types.IRType;
+import icu.merky.jrabche.llvmir.values.IRVal;
+import icu.merky.jrabche.llvmir.values.IRValFP;
+import icu.merky.jrabche.mir.inst.MIRInst;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
+import static icu.merky.jrabche.mir.MIRReg.NewReg;
 
 public final class LoweringContext {
     public Iterator<IRInst> blockIter;
@@ -43,6 +54,7 @@ public final class LoweringContext {
     MIRFunction thisFunction;
     MIRBasicBlock thisBlock;
     Map<IRBasicBlock, MIRBasicBlock> blockMap;
+    Map<IRVal, MIRValue> valueMap;
     int regId = 10000;
 
     public int nextRegId() {
@@ -57,4 +69,71 @@ public final class LoweringContext {
     public void emitCopy(MIRValue dst, MIRValue src) {
     }
 
+    void registerBlock(IRBasicBlock irBasicBlock) {
+        thisBlock = new MIRBasicBlock(thisFunction, irBasicBlock.getName());
+        blockMap.put(irBasicBlock, thisBlock);
+    }
+
+    void diveIntoBlock(IRBasicBlock irBasicBlock) {
+        thisBlock = blockMap.get(irBasicBlock);
+    }
+
+    static MIRBasicType typeLowering(IRType irType) {
+        if (irType.isFloat()) return MIRBasicType.Float;
+        if (irType.isI32()) return MIRBasicType.Int32;
+        if (irType.isI1()) return MIRBasicType.Bool;
+        if (irType.isPointer()) return MIRBasicType.Ptr;
+        if (irType.isArray()) return MIRBasicType.Ptr;
+        throw new RuntimeException("Unknown type" + irType);
+    }
+
+    void registerFunction(IRFunction irFunction) {
+        var mirFunction = new MIRFunction();
+        mirFunction.name = irFunction.getName();
+        mirFunction.parent = thisModule;
+        mirFunction.paramTypes = irFunction.getFunctionType().getParamsType().stream()
+                .map(LoweringContext::typeLowering).collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        mirFunction.regs = new HashMap<>();
+
+        thisFunction = mirFunction;
+    }
+
+
+    void buildMIRBlockMap(IRFunction irFunction) {
+        for (IRBasicBlock irBasicBlock : irFunction.getBlocks()) {
+            var mirBB = new MIRBasicBlock(thisFunction, irBasicBlock.getName());
+            this.blockMap.put(irBasicBlock, mirBB);
+        }
+    }
+
+    /**
+     * Mapping ir value towards mir values in such a way which builds a new MIR value type in mir function.
+     *
+     * @param irFunction LLVM IR Function
+     */
+    public void buildIRVMap(IRFunction irFunction) {
+        valueMap = new HashMap<>();
+        // args
+        var args = irFunction.getFp().values();
+        for (IRValFP arg : args) {
+            var mirType = typeLowering(arg.getType());
+            var mirReg = NewReg(nextRegId(), mirType);
+            valueMap.put(arg, MIRValue.newReg(mirReg));
+        }
+        // blocks
+        for (IRBasicBlock block : irFunction.getBlocks()) {
+            for (IRInst inst : block.getInsts()) {
+                // inst self
+                valueMap.put(inst, MIRValue.newReg(NewReg(nextRegId(), typeLowering(inst.getType()))));
+            }
+        }
+    }
+
+    public void registerGlobals(Map<String, IRVal> globals) {
+        throw new NotImplementedException();
+    }
+
+    public void registerFuncDecls(Map<String, FunctionType> funcDecls) {
+        throw new NotImplementedException();
+    }
 }

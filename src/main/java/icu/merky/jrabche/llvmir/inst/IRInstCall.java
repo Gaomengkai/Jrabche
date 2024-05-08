@@ -79,10 +79,10 @@ public class IRInstCall extends IRInst {
     }
 
     @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
+    public boolean replace(IRVal oldVal, IRVal newVal) {
         for (int i = 0; i < args.size(); i++) {
-            if (args.get(i).equals(inst)) {
-                args.set(i, newInst);
+            if (args.get(i).equals(oldVal)) {
+                args.set(i, newVal);
                 return true;
             }
         }

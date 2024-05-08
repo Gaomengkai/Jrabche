@@ -61,9 +61,9 @@ public class IRInstReturn extends IRInst {
     }
 
     @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (opVal == inst) {
-            opVal = newInst;
+    public boolean replace(IRVal oldVal, IRVal newVal) {
+        if (opVal == oldVal) {
+            opVal = newVal;
             return true;
         }
         return false;

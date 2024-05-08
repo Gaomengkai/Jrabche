@@ -32,15 +32,19 @@
 package icu.merky.jrabche.opt.llvmir;
 
 import icu.merky.jrabche.llvmir.inst.*;
+import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
 import icu.merky.jrabche.llvmir.structures.IRFunction;
-import icu.merky.jrabche.opt.llvmir.annotations.DisabledOpt;
 import icu.merky.jrabche.opt.llvmir.annotations.OptOn;
 
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Set;
 
-@OptOn(value = OptOn.OptOnEnum.Function, name = "Dead Code Elimination v1", ssa = true, afterWhich = {IROptRLSE.class})
-@DisabledOpt
+import static icu.merky.jrabche.logger.JrabcheLogger.JL;
+
+@OptOn(value = OptOn.OptOnEnum.Function, name = "Dead Code Elimination v1", ssa = true, afterWhich = {})
+// @DisabledOpt
 public class IROptDCE implements IROpt {
 
     private final IRFunction F;
@@ -51,24 +55,58 @@ public class IROptDCE implements IROpt {
 
     @Override
     public boolean go() {
+        boolean changed = false;
 
         Set<IRInst> sideEff = new HashSet<>();
-        Set<IRInst> usable = new HashSet<>();
         // 因为这是在SSA形式中，所有标量的alloca已经消除。
         // 所有return和call和分支指令是有用的。
         // 所有load/store/alloca是有用、但是没有副作用的。
         for (var B : F.getBlocks()) {
             for (var I : B.getInsts()) {
-                if (I instanceof IRInstReturn || I instanceof IRInstCall) {
+                if (I instanceof IRInstReturn || I instanceof IRInstCall || I instanceof IRInstBr) {
                     sideEff.add(I);
                 }
                 if (I instanceof IRInstLoad || I instanceof IRInstStore || I instanceof IRInstAlloca) {
-                    usable.add(I);
+                    sideEff.add(I);
                 }
             }
         }
 
+        // bfs
+        Queue<IRInst> sideEffBFS = new LinkedList<>(sideEff.stream().toList());
+        Set<IRInst> sideEffBFSVis = new HashSet<>();
 
-        return false;
+        while (!sideEffBFS.isEmpty()) {
+            var I = sideEffBFS.poll();
+            sideEff.add(I);
+            JL.DebugF("SideEff Add %s\n", I.toString());
+            for (var U : I.getUses()) {
+                if (U instanceof IRInst UI) {
+                    if (!sideEffBFSVis.contains(UI)) {
+                        sideEffBFSVis.add(UI);
+                        sideEffBFS.add(UI);
+                    }
+                }
+            }
+        }
+
+        // mark clean
+        for (var B : F.getBlocks()) {
+            for (IRInst I : B.getInsts()) {
+                if (!sideEff.contains(I)) {
+                    I.setDeleted();
+                    changed = true;
+                    JL.Debug("deleted " + I.toString());
+                }
+            }
+        }
+
+        // actually delete
+        for (IRBasicBlock B : F.getBlocks()) {
+            B.getInsts().removeIf(IRInst::isDeleted);
+        }
+
+
+        return changed;
     }
 }

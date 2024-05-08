@@ -33,11 +33,14 @@ package icu.merky.jrabche.mir;
 
 import icu.merky.jrabche.exceptions.CompileException;
 import icu.merky.jrabche.llvmir.inst.*;
+import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
 import icu.merky.jrabche.llvmir.structures.IRModule;
 import icu.merky.jrabche.llvmir.support.IRCopyRefData;
-import icu.merky.jrabche.llvmir.types.IRType;
+import icu.merky.jrabche.llvmir.values.IRVal;
+import org.antlr.v4.runtime.misc.Pair;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 public class Lowering {
     IRModule irModule;
@@ -52,32 +55,29 @@ public class Lowering {
     }
 
     public void exitSSA() {
-        for (var F : irModule.getFunctions().values()) {
-        }
     }
 
-    MIRBasicType typeLowering(IRType irType) {
-        if (irType.isFloat()) return MIRBasicType.Float;
-        if (irType.isI32()) return MIRBasicType.Int32;
-        if (irType.isI1()) return MIRBasicType.Bool;
-        if (irType.isPointer()) return MIRBasicType.Ptr;
-        if (irType.isArray()) return MIRBasicType.Ptr;
-        throw new RuntimeException("Unknown type" + irType);
-    }
+
 
     public void go() {
+        var globals = irModule.getGlobals();
+        var funcDecls = irModule.getFunctionDeclarations();
+        C.registerGlobals(globals);
+        C.registerFuncDecls(funcDecls);
         for (var irFunction : irModule.getFunctions().values()) {
-            var mirFunction = new MIRFunction();
-            mirFunction.name = irFunction.getName();
-            mirFunction.parent = mirModule;
-            mirFunction.paramTypes = irFunction.getFunctionType().getParamsType().stream()
-                    .map(this::typeLowering).collect(java.util.stream.Collectors.toCollection(ArrayList::new));
-            C.thisFunction = mirFunction;
+            // dive into an atarashii function
+            C.registerFunction(irFunction);
+
+            // build mir block map
+            C.buildMIRBlockMap(irFunction);
+
+            // build ir value map
+            C.buildIRVMap(irFunction);
+
             for (var irBlock : irFunction.getBlocks()) {
-                var mirBlock = new MIRBasicBlock(C.thisFunction, irBlock.getName());
-                mirBlock.name = irBlock.getName();
-                mirBlock.parent = mirFunction;
-                C.thisBlock = mirBlock;
+                // dive into an existed mir block
+                C.diveIntoBlock(irBlock);
+
                 C.blockIter = irBlock.getInsts().iterator();
                 while (C.blockIter.hasNext()) {
                     var irInst = C.blockIter.next();
@@ -102,47 +102,56 @@ public class Lowering {
             case UnaryInst -> handleConvertInst(C, (IRInstUnary) irInst);
             case CallInst -> handleCallInst(C, (IRInstCall) irInst);
             case PhiInst -> handlePhiInst(C, (IRInstPhi) irInst);
-
+            default -> throw new CompileException("Fail to dispatch inst of xxx in selection matching MIR inst");
         }
 
     }
 
-    private void handlePhiInst(LoweringContext c, IRInstPhi irInst) {
+    private void handlePhiInst(LoweringContext c, IRInstPhi I) {
+        var incoming = I.getIncoming();
+        ArrayList<Pair<MIRBasicBlock, MIRValue>> mirIncoming = new ArrayList<>();
+        for (Map.Entry<IRBasicBlock, IRVal> entry : incoming.entrySet()) {
+
+            var irBB = entry.getKey();
+            var mirBB = C.blockMap.get(irBB);
+
+            IRVal value = entry.getValue();
+            // mirIncoming.add(new Pair<>(mirBB, ))
+        }
+    }
+
+    private void handleCallInst(LoweringContext c, IRInstCall I) {
 
     }
 
-    private void handleCallInst(LoweringContext c, IRInstCall irInst) {
+    private void handleConvertInst(LoweringContext c, IRInstUnary I) {
+    }
+
+    private void handleGetElementPtrInst(LoweringContext c, IRInstGEP I) {
 
     }
 
-    private void handleConvertInst(LoweringContext c, IRInstUnary irInst) {
-    }
-
-    private void handleGetElementPtrInst(LoweringContext c, IRInstGEP irInst) {
+    private void handleBitCastInst(LoweringContext c, IRInstBitCast I) {
 
     }
 
-    private void handleBitCastInst(LoweringContext c, IRInstBitCast irInst) {
+    private void handleStoreInst(LoweringContext c, IRInstStore I) {
 
     }
 
-    private void handleStoreInst(LoweringContext c, IRInstStore irInst) {
+    private void handleLoadInst(LoweringContext c, IRInstLoad I) {
 
     }
 
-    private void handleLoadInst(LoweringContext c, IRInstLoad irInst) {
-
+    private void handleFCmpInst(LoweringContext c, IRInstFcmp I) {
     }
 
-    private void handleFCmpInst(LoweringContext c, IRInstFcmp irInst) {
+    private void handleIcmpInst(LoweringContext c, IRInstIcmp I) {
     }
 
-    private void handleIcmpInst(LoweringContext c, IRInstIcmp irInst) {
-    }
-
-    private void handleMathInst(LoweringContext c, IRInstMath irInst) {
-        var op = irInst.getMathOP();
-        boolean f = irInst.getType().isFloat();
+    private void handleMathInst(LoweringContext c, IRInstMath I) {
+        var op = I.getMathOP();
+        boolean f = I.getType().isFloat();
         switch (op) {
             case Invalid -> {
                 throw new CompileException("Fuck! Invalid Math OP");
@@ -170,14 +179,14 @@ public class Lowering {
         }
     }
 
-    private void handleBrInst(LoweringContext c, IRInstBr irInst) {
+    private void handleBrInst(LoweringContext c, IRInstBr I) {
 
     }
 
-    private void handleReturnInst(LoweringContext c, IRInstReturn irInst) {
+    private void handleReturnInst(LoweringContext c, IRInstReturn I) {
     }
 
-    private void handleAllocaInst(LoweringContext c, IRInstAlloca irInst) {
+    private void handleAllocaInst(LoweringContext c, IRInstAlloca I) {
     }
 
     private static class ExitingSSAContext {

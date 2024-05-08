@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Gaomengkai
+ * Copyright (c) 2023-2024, Gaomengkai
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -29,8 +29,24 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.mir;
+package icu.merky.jrabche.mir.inst;
 
-public class MIRModule {
+import icu.merky.jrabche.mir.MIRBasicBlock;
+import icu.merky.jrabche.mir.MIRValue;
+import org.antlr.v4.runtime.misc.Pair;
 
+import java.util.ArrayList;
+import java.util.List;
+
+public class MIRInstPhi extends MIRInst {
+    ArrayList<Pair<MIRBasicBlock, MIRValue>> incomings;
+
+    MIRInstPhi(List<Pair<MIRBasicBlock, MIRValue>> incomings) {
+        super();
+        this.opCode = MIRInstEnum.MIRPhi;
+        this.operands = new MIRValue[0];
+        this.opNum = -1;
+
+        incomings = new ArrayList<>(incomings);
+    }
 }

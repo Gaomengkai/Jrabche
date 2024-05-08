@@ -53,7 +53,7 @@ public class IRInstCopy extends IRInst {
     }
 
     @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
+    public boolean replace(IRVal oldVal, IRVal newVal) {
         return false;
     }
 

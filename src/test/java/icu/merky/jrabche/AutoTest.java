@@ -39,7 +39,7 @@ import icu.merky.jrabche.llvmir.IRBuilder;
 import icu.merky.jrabche.llvmir.IRBuilderImpl;
 import icu.merky.jrabche.llvmir.structures.impl.IRModuleImpl;
 import icu.merky.jrabche.logger.JrabcheLogger;
-import icu.merky.jrabche.opt.llvmir.Executor;
+import icu.merky.jrabche.opt.llvmir.OptExecutor;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.misc.Utils;
 import org.junit.jupiter.api.Assertions;
@@ -82,6 +82,8 @@ public class AutoTest {
     }
 
     private static void genIR(File syFile, File tempFile, boolean enableOpt) throws IOException {
+        // 编译耗时计时
+        var compileStart = System.currentTimeMillis();
         // to ir.
         char[] inputChars = Utils.readFile(syFile.getAbsolutePath());
         String inputStr = new String(inputChars);
@@ -95,7 +97,7 @@ public class AutoTest {
         visitor.visit(parser.compUnit());
         IRModuleImpl module = (IRModuleImpl) builder.getModule();
         if (enableOpt) {
-            new Executor(module).run();
+            new OptExecutor(module).run();
         }
         String ir = module.toString();
         if (ENABLE_IR_OUTPUT)
@@ -103,6 +105,7 @@ public class AutoTest {
 
         // write to $temp$/test.ll
         Utils.writeFile(tempFile.getAbsolutePath(), ir);
+        JL.InfoF("%s,%dms\n", syFile.getName(), System.currentTimeMillis() - compileStart);
     }
 
     List<File> getAllSyFile() {
@@ -185,8 +188,12 @@ public class AutoTest {
         String noPattern;
         if (no < 100) {
             noPattern = "%02d_";
-        } else {
+        } else if (no < 1000) {
             noPattern = "%03d";
+        } else if (no < 10000) {
+            noPattern = "%04d";
+        } else {
+            noPattern = "%d";
         }
         JL.InfoF("Testing %s\n", String.format(noPattern, no));
         // search %2d*.sy
@@ -205,6 +212,7 @@ public class AutoTest {
             else testRunOne(syFile, inFile, outFileExpected, enableOpt);
         } catch (IOException e) {
             e.printStackTrace();
+            throw new RuntimeException(e);
         } finally {
             JL.InfoF("Cost %dms\n", System.currentTimeMillis() - start);
         }
@@ -260,7 +268,7 @@ public class AutoTest {
     @Test
     void testOne() {
         ENABLE_IR_OUTPUT = true;
-        JL.setLevel(JrabcheLogger.LoggerLevel.I);
-        testSpec(402, false, ENABLE_IR_OPT);
+        JL.setLevel(JrabcheLogger.LoggerLevel.D);
+        testSpec(21, true, ENABLE_IR_OPT);
     }
 }

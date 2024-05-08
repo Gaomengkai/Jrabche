@@ -68,13 +68,13 @@ public class IRInstStore extends IRInst {
     }
 
     @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (from == inst) {
-            from = newInst;
+    public boolean replace(IRVal oldVal, IRVal newVal) {
+        if (from == oldVal) {
+            from = newVal;
             return true;
         }
-        if (to == inst) {
-            to = newInst;
+        if (to == oldVal) {
+            to = newVal;
             return true;
         }
         return false;

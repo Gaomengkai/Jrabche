@@ -62,9 +62,9 @@ public class IRInstUnary extends IRInst {
     }
 
     @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (v1 == inst) {
-            v1 = newInst;
+    public boolean replace(IRVal oldVal, IRVal newVal) {
+        if (v1 == oldVal) {
+            v1 = newVal;
             return true;
         }
         return false;

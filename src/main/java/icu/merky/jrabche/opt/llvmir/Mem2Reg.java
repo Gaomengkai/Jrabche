@@ -128,7 +128,7 @@ public class Mem2Reg implements IRPass {
                     allocaLookup.put(a, allocas.size() - 1);
                 }
             } else {
-                // fast path: if the first instruction is not alloca, then there is no alloca in this function.
+                // fast path: if the first instruction is not alloca, then there is no alloca in this block.
                 break;
             }
         }
@@ -291,7 +291,7 @@ public class Mem2Reg implements IRPass {
     }
 
     private Set<IRBasicBlock> calculatePhiBlocks(Set<IRBasicBlock> defBlocks, Set<IRBasicBlock> liveInBlocks, BlockNodeBuilder bnb) {
-        // 这种方式有问题，因为有可能会漏掉一些phi节点
+        // 原始方式有问题，因为有可能会漏掉一些phi节点
         // 假如block2被插入了一个phi，那么block2也会成为defBlock，但是block2不会被加入到phiBlocks中.
         // 所以这里需要用到DF+集合
         Set<IRBasicBlock> phiBlocks = new HashSet<>();

@@ -34,5 +34,5 @@ package icu.merky.jrabche.llvmir.inst;
 import icu.merky.jrabche.llvmir.values.IRVal;
 
 public interface Replaceable {
-    boolean replace(IRVal inst, IRVal newInst);
+    boolean replace(IRVal oldVal, IRVal newVal);
 }

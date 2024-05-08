@@ -32,6 +32,7 @@
 package icu.merky.jrabche.mir;
 
 public enum MIRRegTag {
+    NORMAL,
     AREG,
     RETREG
 }

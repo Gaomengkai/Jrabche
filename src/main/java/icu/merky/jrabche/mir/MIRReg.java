@@ -37,7 +37,7 @@ public class MIRReg {
 
     int id;
     MIRBasicType type;
-    MIRRegTag tag;
+    MIRRegTag tag = MIRRegTag.NORMAL;
 
     @Override
     public boolean equals(Object o) {
@@ -55,39 +55,31 @@ public class MIRReg {
     private MIRReg() {
     }
 
-    public static MIRReg NewBool(int id) {
+    public static MIRReg NewReg(int id, MIRBasicType type) {
         MIRReg reg = new MIRReg();
         reg.id = id;
-        reg.type = MIRBasicType.Bool;
+        reg.type = type;
         return reg;
+    }
+
+    public static MIRReg NewBool(int id) {
+        return NewReg(id, MIRBasicType.Bool);
     }
 
     public static MIRReg NewInt64(int id) {
-        MIRReg reg = new MIRReg();
-        reg.id = id;
-        reg.type = MIRBasicType.Int64;
-        return reg;
+        return NewReg(id, MIRBasicType.Int64);
     }
 
     public static MIRReg NewFloat(int id) {
-        MIRReg reg = new MIRReg();
-        reg.id = id;
-        reg.type = MIRBasicType.Float;
-        return reg;
+        return NewReg(id, MIRBasicType.Float);
     }
 
     public static MIRReg NewInt32(int id) {
-        MIRReg reg = new MIRReg();
-        reg.id = id;
-        reg.type = MIRBasicType.Int32;
-        return reg;
+        return NewReg(id, MIRBasicType.Int32);
     }
 
     public static MIRReg NewPtr(int id) {
-        MIRReg reg = new MIRReg();
-        reg.id = id;
-        reg.type = MIRBasicType.Ptr;
-        return reg;
+        return NewReg(id, MIRBasicType.Ptr);
     }
 
     public int getId() {
@@ -113,5 +105,14 @@ public class MIRReg {
     public boolean isPtr() {
         return type == MIRBasicType.Ptr;
     }
+
+    public boolean isArg() {
+        return tag == MIRRegTag.AREG;
+    }
+
+    public boolean isRet() {
+        return tag == MIRRegTag.RETREG;
+    }
+
 
 }

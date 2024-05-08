@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2023, Gaomengkai
+ * Copyright (c) 2023-2024, Gaomengkai
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -29,8 +29,36 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package icu.merky.jrabche.mir;
+package icu.merky.jrabche.mir.inst;
 
-public class MIRModule {
+public enum MIRInstEnum {
+    MIRJ,
+    MIRB,
+    MIRLoad, MIRStore,
+    MIRAdd, MIRSub, MIRMul,
+    MIRShl, MIRLShr, MIRAShr,
+    MIRAnd, MIROr, MIRXor,
+    MIRSDiv, MIRUDiv, MIRSRem, MIRURem,
 
+    // Compare
+    MIREq, MIRNe, MIRLt, MIRGt, MIRLe, MIRGe,
+    // Float Compare
+    MIRFEq, MIRFNe, MIRFLt, MIRFGt, MIRFLe, MIRFGe,
+
+    // Float
+    MIRFAdd, MIRFSub, MIRFMul, MIRFDiv, MIRFRem,
+
+    MIRZExt, MIRSExt,
+    MIRF2S, MIRS2F,
+
+    MIRReturn,
+
+    // IR Special
+    MIRCopy, MIRLoadAdr,
+    // Stack virtual operation
+    MIRStackStore, MIRStackLoad, MIRStackSave, MIRStackRestore,
+    MIRStoreAllocate,
+
+    // Unsupported
+    MIRPhi,
 }

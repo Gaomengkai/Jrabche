@@ -31,6 +31,8 @@
 
 package icu.merky.jrabche.mir;
 
+import icu.merky.jrabche.mir.inst.MIRInst;
+
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;

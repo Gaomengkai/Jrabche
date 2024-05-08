@@ -32,6 +32,8 @@
 package icu.merky.jrabche.mir;
 
 
+import java.util.Objects;
+
 public class MIRValue {
     MIRReg reg;
     Integer imm;
@@ -184,5 +186,17 @@ public class MIRValue {
                 return "invalid";
             }
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof MIRValue mirValue)) return false;
+        return Objects.equals(reg, mirValue.reg) && Objects.equals(imm, mirValue.imm) && Objects.equals(fImm, mirValue.fImm) && Objects.equals(label, mirValue.label) && vt == mirValue.vt && bt == mirValue.bt;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(reg, imm, fImm, label, vt, bt);
     }
 }

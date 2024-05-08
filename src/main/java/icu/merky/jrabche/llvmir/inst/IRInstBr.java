@@ -38,7 +38,7 @@ import icu.merky.jrabche.llvmir.values.IRValConstBool;
 
 import java.util.Set;
 
-public class IRInstBr extends IRInst {
+public class IRInstBr extends IRInst implements BlockReplaceable {
     IRBasicBlock trueBB, falseBB;
     IRVal cond;
 
@@ -77,24 +77,46 @@ public class IRInstBr extends IRInst {
     }
 
     @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (cond == inst) {
-            cond = newInst;
+    public boolean replace(IRVal oldVal, IRVal newVal) {
+        if (cond == oldVal) {
+            cond = newVal;
+            // fast path to deal with CONST NEW VAL
+            if (cond instanceof IRValConstBool boolConst) {
+                if (boolConst.getValue() == 0) { // br false
+                    trueBB = falseBB;
+                }
+                falseBB = null;
+                cond = null;
+            }
             return true;
         }
         return false;
     }
 
-    public boolean replaceBasicBlock(IRBasicBlock old, IRBasicBlock newBB) {
+    @Override
+    public boolean replaceBlock(IRBasicBlock old, IRBasicBlock newBB) {
+        boolean ret = false;
         if (trueBB == old) {
             trueBB = newBB;
-            return true;
+            ret = true;
         }
         if (falseBB == old) {
             falseBB = newBB;
-            return true;
+            ret = true;
         }
-        return false;
+        if (trueBB == falseBB) {
+            cond = null;
+            falseBB = null;
+        }
+        return ret;
+    }
+
+    @Override
+    public Set<IRBasicBlock> getReplaceableBlocks() {
+        if (null == cond) {
+            return Set.of(trueBB);
+        }
+        return Set.of(trueBB, falseBB);
     }
 
     public IRBasicBlock getTrueBB() {

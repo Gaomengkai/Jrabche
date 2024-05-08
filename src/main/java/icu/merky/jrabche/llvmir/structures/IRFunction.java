@@ -7,6 +7,7 @@ import icu.merky.jrabche.llvmir.types.IRType;
 import icu.merky.jrabche.llvmir.values.IRValFP;
 
 import java.util.List;
+import java.util.Map;
 
 public abstract class IRFunction {
     // SSA defines
@@ -56,4 +57,6 @@ public abstract class IRFunction {
     public abstract List<IRInstAlloca> getAlloca();
 
     public abstract void finishFunction();
+
+    public abstract Map<String, IRValFP> getFp();
 }

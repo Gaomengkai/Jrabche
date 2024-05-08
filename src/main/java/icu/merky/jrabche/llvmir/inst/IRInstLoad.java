@@ -62,9 +62,9 @@ public class IRInstLoad extends IRInst {
     }
 
     @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        if (ptr == inst) {
-            ptr = newInst;
+    public boolean replace(IRVal oldVal, IRVal newVal) {
+        if (ptr == oldVal) {
+            ptr = newVal;
             return true;
         }
         return false;

@@ -41,7 +41,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class IRInstPhi extends IRInst {
+public class IRInstPhi extends IRInst implements BlockReplaceable {
     // List<Pair<IRVal, IRBasicBlock>> incoming;
 
     Map<IRBasicBlock, IRVal> incoming;
@@ -55,6 +55,10 @@ public class IRInstPhi extends IRInst {
         incoming.put(block, val);
     }
 
+    public boolean removeIncoming(IRBasicBlock block) {
+        return incoming.remove(block) != null;
+    }
+
     public void addIncoming(Pair<IRVal, IRBasicBlock> pair) {
         incoming.put(pair.b, pair.a);
     }
@@ -63,6 +67,7 @@ public class IRInstPhi extends IRInst {
     public Map<IRBasicBlock, IRVal> getIncoming() {
         return incoming;
     }
+
 
     @Override
     public String toString() {
@@ -88,12 +93,35 @@ public class IRInstPhi extends IRInst {
     }
 
     @Override
-    public boolean replace(IRVal inst, IRVal newInst) {
-        return false;
+    public boolean replace(IRVal oldVal, IRVal newVal) {
+        boolean changed = false;
+        for (var entry : incoming.entrySet()) {
+            if (entry.getValue() == oldVal) {
+                incoming.put(entry.getKey(), newVal);
+                changed = true;
+            }
+        }
+        return changed;
     }
 
     @Override
     public String asValue() {
         return name;
+    }
+
+    @Override
+    public boolean replaceBlock(IRBasicBlock oldBlock, IRBasicBlock newBlock) {
+        if (incoming.containsKey(oldBlock)) {
+            IRVal val = incoming.get(oldBlock);
+            incoming.remove(oldBlock);
+            incoming.put(newBlock, val);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public Set<IRBasicBlock> getReplaceableBlocks() {
+        return new HashSet<>(incoming.keySet());
     }
 }

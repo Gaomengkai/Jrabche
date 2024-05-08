@@ -34,6 +34,7 @@ package icu.merky.jrabche.opt.llvmir;
 import icu.merky.jrabche.llvmir.inst.IRInstBr;
 import icu.merky.jrabche.llvmir.structures.IRBasicBlock;
 import icu.merky.jrabche.llvmir.structures.IRFunction;
+import icu.merky.jrabche.opt.llvmir.annotations.DisabledOpt;
 import icu.merky.jrabche.opt.llvmir.annotations.OptOn;
 
 import java.util.HashMap;
@@ -44,7 +45,7 @@ import static icu.merky.jrabche.llvmir.structures.impl.IRFunctionImpl.BuildBBGra
 import static icu.merky.jrabche.logger.JrabcheLogger.JL;
 
 @OptOn(value = OptOn.OptOnEnum.Function, name = "Block Rearrange", ssa = false)
-//@DisabledOpt
+@DisabledOpt
 public class IROptBlockRearrange implements IROpt {
     private final IRFunction F;
     private int mergeCount = 0;
@@ -74,8 +75,8 @@ public class IROptBlockRearrange implements IROpt {
 
     private boolean removeUnreachableBB() {
         boolean changed = false;
-        boolean innerChanged = false;
-        boolean needContinue = false;
+        boolean innerChanged;
+        boolean needContinue;
         do {
             innerChanged = false;
             BuildBBGraph(F);
@@ -153,12 +154,12 @@ public class IROptBlockRearrange implements IROpt {
                 if (bb.getTerminator() instanceof IRInstBr br) {
                     var target1 = br.getTrueBB();
                     if (blockMap.containsKey(target1)) {
-                        br.replaceBasicBlock(target1, blockMap.get(target1));
+                        br.replaceBlock(target1, blockMap.get(target1));
                         innerChanged = true;
                     }
                     var target2 = br.getFalseBB();
                     if (target2 != null && blockMap.containsKey(target2)) {
-                        br.replaceBasicBlock(target2, blockMap.get(target2));
+                        br.replaceBlock(target2, blockMap.get(target2));
                         innerChanged = true;
                     }
                 }
