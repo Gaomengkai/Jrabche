@@ -43,6 +43,7 @@ import org.antlr.v4.runtime.misc.Utils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Compiler {
@@ -51,6 +52,7 @@ public class Compiler {
         public boolean emitLLVM;
         public boolean emitASM;
         public boolean enableO1;
+        public boolean enableOX;
         public boolean verbose;
         public File outputFile;
         public File inputFile;
@@ -99,6 +101,14 @@ public class Compiler {
             this.verbose = verbose;
         }
 
+        public boolean isEnableOX() {
+            return enableOX;
+        }
+
+        public void setEnableOX(boolean enableOX) {
+            this.enableOX = enableOX;
+        }
+
         public void isValid() {
             if (emitASM && emitLLVM) {
                 throw new RuntimeException("Sorry, I have trouble with emitting assembly " +
@@ -143,6 +153,11 @@ public class Compiler {
                     case "-O3":
                     case "-Ofast":
                         a.setEnableO1(true);
+                        break;
+                    case "-Ox":
+                    case "-OX":
+                    case "-O6":
+                        a.setEnableOX(true);
                         break;
                     case "-o":
                         if (!iter.hasNext()) {
@@ -268,8 +283,22 @@ public class Compiler {
             Utils.writeFile(getTmpFile().getAbsolutePath(), ir);
             // use clang or clang.exe to generate asm file.
             // clang -S ll/$file -o s/$file.s --target=riscv64 -fPIC -mabi=lp64f -fno-addrsig
-            ProcessBuilder pb = new ProcessBuilder("clang", "-S", getTmpFile().getAbsolutePath(),
-                    "-o", compilerArgs.outputFile.getAbsolutePath(), "--target=riscv64", "-fPIC", "-mabi=lp64f", "-fno-addrsig", "-w");
+            // -Ox
+            ArrayList<String> cmds = new ArrayList<>();
+            cmds.add("clang");
+            if (compilerArgs.isEnableOX()) {
+                cmds.add("-O2");
+            }
+            cmds.add("-S");
+            cmds.add(getTmpFile().getAbsolutePath());
+            cmds.add("-o");
+            cmds.add(compilerArgs.outputFile.getAbsolutePath());
+            cmds.add("--target=riscv64");
+            cmds.add("-fPIC");
+            cmds.add("-mabi=lp64f");
+            cmds.add("-fno-addrsig");
+            cmds.add("-w");
+            ProcessBuilder pb = new ProcessBuilder(cmds);
             pb.inheritIO();
             var clangProcess = pb.start();
             try {
